@@ -20,8 +20,8 @@ QA Pilot is an end-to-end QA management and test automation platform. It takes a
 | 4 | Playwright script generation, Run Test Cases, execution screens + demo app | ✅ Done |
 | 5 | Auto-defects with screenshots/attachments, defect management | |
 | 6 | Jira: manual step-by-step guide with illustrated screens (no Jira connection, by decision) | ✅ Done |
-| 7 | Morning/evening defect monitoring + notifications | ⏳ Next |
-| 8 | DSR, WSR, Defect Report, Dashboard | |
+| 7 | Morning/evening defect monitoring (in-app delivery) | ✅ Done |
+| 8 | DSR, WSR, Defect Report, Dashboard | ⏳ Next |
 | 9 | Test Closure Report with risk highlighting | |
 | 10 | Hardening, tests, Docker | |
 
@@ -87,7 +87,8 @@ See [`.env.example`](.env.example). Nothing secret is hard-coded, and the API re
 | `STORAGE_DIR` | Uploaded documents, screenshots, videos, traces |
 | `ANTHROPIC_API_KEY`, `CLAUDE_MODEL` | Optional AI layer (default model `claude-opus-5-5`) |
 | `OCR_LANG`, `OCR_LANG_PATH` | OCR language (default `eng`, bundled) |
-| `MONITOR_*` | Morning/evening defect check schedule (default 09:30 and 18:00 Asia/Kolkata) |
+| `MONITOR_TIMEZONE`, `MONITOR_MORNING_TIME`, `MONITOR_EVENING_TIME` | Default check schedule (09:30 and 18:00 Asia/Kolkata); each project can change it |
+| `MONITOR_SCHEDULER` | `false` stops the scheduler in this process (run it in one replica only if you prefer) |
 
 ## Roles and permissions
 
@@ -227,6 +228,19 @@ Also available with one click:
 - **Download evidence (ZIP):** all screenshots, the video, the trace and the logs, ready to drag into Jira (step 9).
 - **Guide as PDF / Word:** the whole guide with all 11 illustrations, for sharing or printing.
 - **Save the Jira key** (and optional link) back on the defect (step 11). The key is validated (`PROJ-123`, `https://` links only), searchable in the defect list, shown on the defect and in exports, and recorded in its history.
+
+## Defect monitoring (Phase 7)
+
+- **When:** checks run **twice a day** for every active project, by default **09:30 and 18:00 Asia/Kolkata**. Each project can change the times, time zone, SLA hours and ageing threshold on the **Defect Monitoring** page (QA Lead/Admin). A QA Lead can also run a check at any time.
+- **What a check produces:** a **Defect Alert Summary**.
+  - Every open **Blocker, Critical and P1** defect, highlighted in **red and bold**, with ID, title, severity, priority, status, assignee, age, last update, SLA due time and whether the SLA is breached. SLA hours per priority default to P1 24h, P2 7 days, P3 30 days, P4 90 days.
+  - Changes since the last check: new defects (including confirmed drafts), reopened, closed.
+  - Defects pending retest, ageing high-impact defects (more than 3 days by default), drafts waiting for review, and open counts by severity and priority.
+- **Where it appears:** the Monitoring page (with the full history of morning, evening and manual checks), an alert card on the Overview, and a red count badge on **Defect Monitoring** in the menu. Every check exports to Excel/PDF/Word. Email, Slack and Teams delivery are **not enabled**, by decision.
+- **Scheduler:** built in, with no extra dependency.
+  - It wakes every minute and checks each project's local time.
+  - A slot runs **once per day**; a database unique constraint enforces this even with several API instances.
+  - A check missed while the server was down is **caught up within 3 hours** and marked *late*.
 
 ## Security and compliance features (Phase 1)
 

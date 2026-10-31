@@ -149,3 +149,14 @@ export interface DefectDetail extends Defect {
   history: { id: string; kind: string; field?: string | null; fromValue?: string | null; toValue?: string | null; comment?: string | null; createdAt: string; userName: string }[];
   allowedTransitions: string[];
 }
+
+export interface MonitorSettings { enabled: boolean; timeZone: string; morning: string; evening: string; slaHours: Record<string, number>; agingDays: number }
+export interface MonitorLine { id: string; defectId: string; title: string; severity: string; priority: string; status: string; assignedTo: string | null; ageDays: number; lastUpdated: string; slaDueAt: string; slaBreached: boolean; module: string | null }
+export interface MonitorSummary {
+  generatedAt: string; slot: string; timeZone: string; localTime: string; since: string; previousCheckAt: string | null;
+  totals: { open: number; critical: number; breached: number; drafts: number; pendingRetest: number; aging: number };
+  bySeverity: Record<string, number>; byPriority: Record<string, number>;
+  critical: MonitorLine[]; newSince: MonitorLine[]; reopened: MonitorLine[]; closed: MonitorLine[]; pendingRetest: MonitorLine[]; aging: MonitorLine[];
+}
+export interface MonitorCheckSummary { id: string; slot: string; scheduledFor: string | null; late: boolean; criticalCount: number; breachedCount: number; createdAt: string }
+export interface MonitorCheck extends MonitorCheckSummary { summary: MonitorSummary; delivered: string[] }
