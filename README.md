@@ -1,5 +1,7 @@
 # QA Pilot
 
+> **New here and not technical?** Follow **[GETTING-STARTED.md](GETTING-STARTED.md)**: install Docker Desktop, download the ZIP, and double-click *Start QA Pilot*.
+
 QA Pilot is an end-to-end QA management and test automation platform. It takes a client requirement document through the full software testing life cycle (STLC): requirement analysis, test design, test execution, defect management, reporting and test closure.
 
 | Layer | Stack |
