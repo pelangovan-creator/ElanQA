@@ -545,13 +545,18 @@ model MonitorCheck {
   id         String   @id @default(cuid())
   projectId  String
   slot       String // Morning | Evening | Manual
+  scheduledFor String? // "2026-10-31 Morning" in the project time zone - one check per slot per day
+  late       Boolean  @default(false) // run after the slot time (e.g. server was down)
   summary    String // JSON alert summary
   criticalCount Int   @default(0)
+  breachedCount Int   @default(0)
   delivered  String? // JSON of channels delivered
+  triggeredBy String? // user id for manual checks
   createdAt  DateTime @default(now())
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
+  @@unique([projectId, scheduledFor])
   @@index([projectId, createdAt])
 }
 
