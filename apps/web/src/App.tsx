@@ -12,6 +12,8 @@ import { TestArtefacts } from './pages/TestArtefacts';
 import { TestExecution } from './pages/TestExecution';
 import { RunView } from './pages/execution/RunView';
 import { ManualRun } from './pages/execution/ManualRun';
+import { Defects } from './pages/Defects';
+import { DefectDetail } from './pages/DefectDetail';
 
 export function App() {
   const { user, loading } = useAuth();
@@ -29,6 +31,8 @@ export function App() {
           <Route path="execution" element={<TestExecution />} />
           <Route path="execution/runs/:runId" element={<RunView />} />
           <Route path="execution/manual/:runId" element={<ManualRun />} />
+          <Route path="defects" element={<Defects />} />
+          <Route path="defects/:id" element={<DefectDetail />} />
           {user.role === 'Admin' && <Route path="users" element={<Users />} />}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

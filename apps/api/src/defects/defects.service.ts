@@ -46,6 +46,7 @@ export class DefectsService {
       ...(f.module ? { module: f.module } : {}),
       ...(f.assignedTo ? { assignedTo: f.assignedTo } : {}),
       ...(f.defectType ? { defectType: f.defectType } : {}),
+      ...(f.run ? { testRunId: f.run } : {}),
       ...(f.q ? { OR: [{ title: { contains: f.q } }, { defectId: { contains: f.q } }, { jiraKey: { contains: f.q } }] } : {}),
     };
     const rows = await this.prisma.defect.findMany({
@@ -356,10 +357,25 @@ export class DefectsService {
 
 const fmt = (v: unknown) => (v === null || v === undefined ? null : v instanceof Date ? v.toISOString().slice(0, 10) : String(v));
 const firstLine = (s: string | null) => (s ?? '').split('\n').map((l) => l.trim()).find(Boolean)?.slice(0, 300) ?? '';
-/** Keep the readable part of a Playwright error: first message line + expected/received. */
-function cleanError(s: string | null): string {
+/** Turn a Playwright error into a sentence a developer can read in the defect. */
+export function cleanError(s: string | null): string {
   if (!s) return '';
   const lines = s.split('\n').map((l) => l.trim()).filter(Boolean);
-  const keep = lines.filter((l, i) => i === 0 || /^(Expected|Received|Locator|Timeout)/.test(l)).slice(0, 5);
-  return keep.join('\n').replace(/^Error:\s*/, '').slice(0, 2000);
+  const first = lines[0].replace(/^Error:\s*/, '');
+  const get = (label: string) => lines.find((l) => l.startsWith(label))?.slice(label.length).trim();
+  const shown = (v: string | undefined) => (v ?? '').replace(/^"|"$/g, '').replace(/\\n/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 300);
+  // Built-in assertions: "expect(locator).toContainText(expected) failed" + Expected/Received lines.
+  const m = /^expect\((?:locator|page|received)\)\.(not\.)?(\w+)\(/.exec(first);
+  if (m) {
+    const negated = !!m[1] || /\.not\./.test(first);
+    const expected = get('Expected pattern:') ?? get('Expected string:') ?? get('Expected:');
+    const received = get('Received string:') ?? get('Received:');
+    if (/toContainText|toHaveText/.test(m[2])) return `Expected the page ${negated ? 'NOT ' : ''}to show text matching ${expected} - it showed: "${shown(received)}"`;
+    if (m[2] === 'toBeVisible') return `Expected ${get('Locator:') ?? 'the element'} to be visible - it was not`;
+    if (m[2] === 'toHaveCount') return `Expected ${get('Locator:') ?? 'elements'} to have count ${expected} - found ${received}`;
+    return `${first}${expected ? `\nExpected: ${expected}` : ''}${received ? `\nReceived: ${shown(received)}` : ''}`;
+  }
+  // Our own assertion messages ('"Password" should be rejected ...') already read well.
+  if (/^(TimeoutError|locator\.)/.test(first)) return `${first}${get('- waiting for') ? ` (waiting for ${get('- waiting for')})` : ''}`.slice(0, 1000);
+  return first.slice(0, 1000);
 }

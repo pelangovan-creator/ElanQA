@@ -52,6 +52,7 @@ export function RunView() {
             <Badge color="green">{r.passed} Pass</Badge><Badge color="red">{r.failed} Fail</Badge><Badge color="amber">{r.blocked} Blocked</Badge><Badge>{r.skipped} Skipped</Badge>
           </p>
         </div>
+        {r.status === 'Completed' && r.failed > 0 && <p className="mt-2 text-sm"><Link className="font-semibold text-brand-700 underline" to={`/defects?run=${r.runId}`}>Review the draft defects created from {r.runId}</Link></p>}
         {r.summary?.notAutomated && r.summary.notAutomated.length > 0 && <p className="mt-2 text-xs text-slate-600">Not in this automated run (manual only): {r.summary.notAutomated.join(', ')}</p>}
       </Card>
       {r.kind === 'Automated' && (

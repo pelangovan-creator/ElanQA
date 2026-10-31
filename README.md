@@ -19,7 +19,7 @@ QA Pilot is an end-to-end QA management and test automation platform. It takes a
 | 3 | Clarifications, scenarios, test cases, techniques, test plan, test data + review workflow + exports | ✅ Done |
 | 4 | Playwright script generation, Run Test Cases, execution screens + demo app | ✅ Done |
 | 5 | Auto-defects with screenshots/attachments, defect management | |
-| 6 | Jira guide + Jira REST integration | |
+| 6 | Jira guide + Jira REST integration | ⏳ Next |
 | 7 | Morning/evening defect monitoring + notifications | |
 | 8 | DSR, WSR, Defect Report, Dashboard | |
 | 9 | Test Closure Report with risk highlighting | |
@@ -185,6 +185,31 @@ The run finds the three bugs through five failing test cases (state transition, 
 - Playwright runs as a child process with an **allowlisted environment**, so the API's own `DATABASE_URL`, `JWT_SECRET`, `ENCRYPTION_KEY` and `ANTHROPIC_API_KEY` never reach test code. Test credentials are passed in through `QAPILOT_CREDENTIALS` and are never written to disk.
 - Typed passwords are **redacted** before anything is stored: step titles, errors, run logs, console/network logs, and every file inside the trace archive, including form bodies in plain, URL-encoded and form-encoded variants. Screenshots and video show password fields masked.
 - **Running scripts executes code on the server.** Anyone with the `execution.run` permission (Admin, QA Lead, Tester) can edit and run scripts. In production, run QA Pilot in an isolated container (see Docker) with only the network access the application under test needs.
+
+## Defect management (Phase 5)
+
+- **Automatic drafts:** after every run, each failed test case becomes one **draft defect**, with failures across browsers combined.
+  - Every field in section 5.2 is filled in: module, requirement IDs, test case and run, environment, build, browser/viewport/OS, pre-conditions, steps to reproduce, test data, expected and actual result, severity, priority and defect type.
+  - The actual result is rewritten from Playwright's assertion output into a sentence, e.g. *Expected the page to show text matching /locked/i – it showed: "Invalid email or password."*
+  - All the run's evidence is attached: screenshot at failure, full-page and annotated screenshots, video, trace (passwords redacted), console log and network log.
+  - Drafts stay out of the defect list until someone reviews them.
+- **Duplicates:**
+  - Similar defects in the same module are suggested on the draft, so you can choose **Link to DEF-x instead**. The evidence and a "reproduced in RUN-x" note move to the existing defect, and the draft is kept as *Duplicate*.
+  - A test case that fails again while its defect is still open updates that defect instead of creating a new draft.
+- **Screenshot is mandatory:** a draft can be confirmed only if it has at least one screenshot. Manual failures can attach one on the defect.
+- **Life cycle:** New → Open → Assigned → In Progress → Fixed → Ready for Retest → Retest → Verified → Closed, plus Reopened, Deferred, Rejected, Duplicate and Not a Bug. Rules are enforced on the server:
+  - Assigning needs an assignee.
+  - Rejected, Not a Bug, Deferred and Reopened need a comment.
+  - Fixed needs a root cause.
+  - Duplicate needs the original defect.
+  - Developers can only move a defect to In Progress, Fixed or Ready for Retest, and can only edit root cause, fix version and target date. Verification and closing belong to QA. Clients can view only.
+- **Automatic retest:** in a later run, a passing test verifies its defect if that defect is *Ready for Retest* or in *Retest*, and a failing test reopens it.
+- **History:** every field change, status change and comment is recorded, as well as the audit trail. Defect age is shown in days.
+- **Severity and priority definitions:** shown as keyboard-accessible tooltips on every badge, under each dropdown, and in a definitions panel.
+- **Exports:**
+  - A single defect report in PDF/Word with the screenshots embedded, or in Excel.
+  - The defect list in Excel/PDF/Word with every field and open Blocker/Critical/P1 defects highlighted in red.
+- Set the project setting `defects.autoCreate` to `false` to turn off automatic drafts.
 
 ## Security and compliance features (Phase 1)
 

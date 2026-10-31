@@ -7,10 +7,11 @@ import { AiBadge } from '../../components/AiBadge';
 
 export const base = (projectId: string) => `/projects/${projectId}/artefacts`;
 
-export function ExportButtons({ path, name }: { path: string; name: string }) {
+export function ExportButtons({ path, name, fullPath }: { path?: string; name: string; fullPath?: string }) {
   const { current } = useProject();
   const [err, setErr] = useState<string | null>(null);
-  const go = (f: string) => download(`${base(current!.id)}/${path}/export?format=${f}`, `${name}.${f}`).catch((e) => setErr(e.message));
+  const url = fullPath ?? `${base(current!.id)}/${path}/export`;
+  const go = (f: string) => download(`${url}?format=${f}`, `${name}.${f}`).catch((e) => setErr(e.message));
   return (
     <div className="flex flex-wrap items-center gap-1" role="group" aria-label={`Export ${name}`}>
       <span className="text-xs text-slate-600">Export:</span>

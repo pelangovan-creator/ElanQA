@@ -115,3 +115,37 @@ export interface RunDetail extends RunSummary {
   log?: string | null; executedBy?: string | null; environment?: { name: string; envType: string; baseUrl?: string } | null;
   summary: { browsers?: string[]; notAutomated?: string[]; testCases?: string[]; testCaseIds?: string[]; environment?: string; baseUrl?: string } | null; results: RunResult[];
 }
+
+export const DEFECT_STATUSES = ['New', 'Open', 'Assigned', 'InProgress', 'Fixed', 'ReadyForRetest', 'Retest', 'Reopened', 'Verified', 'Closed', 'Deferred', 'Rejected', 'Duplicate', 'NotABug'] as const;
+export const DEFECT_STATUS_LABEL: Record<string, string> = {
+  New: 'New', Open: 'Open', Assigned: 'Assigned', InProgress: 'In Progress', Fixed: 'Fixed', ReadyForRetest: 'Ready for Retest', Retest: 'Retest',
+  Reopened: 'Reopened', Verified: 'Verified', Closed: 'Closed', Deferred: 'Deferred', Rejected: 'Rejected', Duplicate: 'Duplicate', NotABug: 'Not a Bug',
+};
+export const DEFECT_TYPES = ['Functional', 'UI', 'Performance', 'Security', 'Data', 'Usability', 'Compatibility'] as const;
+export const PRIORITIES = ['P1', 'P2', 'P3', 'P4'] as const;
+export const SEVERITY_DEF: Record<string, string> = {
+  Blocker: 'Testing or a core business flow cannot proceed; no workaround.',
+  Critical: 'Major function broken, data loss/corruption, or a security issue; workaround is hard or none.',
+  Major: 'Function not working as specified; a workaround exists.',
+  Minor: 'Small functional/UI issue with low impact.',
+  Trivial: 'Cosmetic (typo, alignment).',
+};
+export const PRIORITY_DEF: Record<string, string> = { P1: 'Fix immediately / within the current day.', P2: 'Fix in the current sprint/build.', P3: 'Fix when possible.', P4: 'Low / backlog.' };
+export const isHighImpact = (d: { severity: string; priority: string }) => d.severity === 'Blocker' || d.severity === 'Critical' || d.priority === 'P1';
+
+export interface Defect {
+  id: string; defectId: string; title: string; description?: string | null; module?: string | null; requirementId?: string | null; testCaseId?: string | null;
+  testRunId?: string | null; environment?: string | null; build?: string | null; browserDeviceOs?: string | null; preconditions?: string | null;
+  stepsToReproduce?: string | null; testDataUsed?: string | null; expectedResult?: string | null; actualResult?: string | null;
+  severity: string; priority: string; defectType: string; status: string; isDraft: boolean; reportedBy?: string | null; reportedDate: string;
+  assignedTo?: string | null; rootCause?: string | null; fixVersion?: string | null; targetDate?: string | null; retestResult?: string | null; closedDate?: string | null;
+  jiraKey?: string | null; jiraUrl?: string | null; ageDays: number; open: boolean; thumbnailId: string | null; hasScreenshot: boolean;
+  duplicateCandidates: { id: string; defectId: string; title: string; status: string; score: number; reason: string }[];
+  testCase?: { id?: string; tcId: string; title?: string } | null;
+  attachments: (AttachmentMeta & { createdAt?: string })[];
+}
+export interface DefectDetail extends Defect {
+  duplicateOf: { id: string; defectId: string; title: string } | null;
+  history: { id: string; kind: string; field?: string | null; fromValue?: string | null; toValue?: string | null; comment?: string | null; createdAt: string; userName: string }[];
+  allowedTransitions: string[];
+}
