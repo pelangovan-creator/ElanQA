@@ -1,0 +1,9 @@
+{
+  "name": "@qa-pilot/demo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "ShopEasy Demo - a small application under test with deliberate, documented bugs",
+  "main": "server.js",
+  "scripts": { "start": "node server.js", "test": "node --test" },
+  "dependencies": { "express": "^5.1.0" }
+}

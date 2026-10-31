@@ -101,9 +101,12 @@ export function designForItem(item: DesignItem, seq: () => string): DesignOutput
       });
       if (nums.min !== undefined || nums.max !== undefined) {
         const edge = scenario('Edge', `Boundaries of ${field.name}: ${[nums.min, nums.max].filter((x) => x !== undefined).join(' to ')}${nums.unit ? ` ${nums.unit}` : ''} (${ref})`);
+        const exact = nums.min !== undefined && nums.min === nums.max;
         tc(edge, {
-          title: `${field.name}: boundary values are accepted (min, min+1, max-1, max)`, description: `Boundary value analysis on ${req}.`, technique: 'BoundaryValueAnalysis', testType: 'Functional', automationCandidate: true, dataKey: data.key,
-          steps: steps([nav, `${item.module} page is displayed`], [`Enter the "min" and "min+1" boundary values from test data`, 'Both values are accepted'], [`Enter the "max-1" and "max" boundary values from test data`, 'Both values are accepted']),
+          title: exact ? `${field.name}: exactly ${nums.min}${nums.unit ? ` ${nums.unit}` : ''} is accepted` : `${field.name}: boundary values are accepted (min, min+1, max-1, max)`, description: `Boundary value analysis on ${req}.`, technique: 'BoundaryValueAnalysis', testType: 'Functional', automationCandidate: true, dataKey: data.key,
+          steps: exact
+            ? steps([nav, `${item.module} page is displayed`], [`Enter the "min" (= max) boundary value from test data`, 'Value is accepted'])
+            : steps([nav, `${item.module} page is displayed`], [`Enter the "min" and "min+1" boundary values from test data`, 'Both values are accepted'], [`Enter the "max-1" and "max" boundary values from test data`, 'Both values are accepted']),
         });
         tc(edge, {
           title: `${field.name}: values just outside the boundaries are rejected (min-1, max+1)`, description: `Boundary value analysis (invalid boundaries) on ${req}.`, technique: 'BoundaryValueAnalysis', testType: 'Negative', automationCandidate: true, dataKey: data.key,
@@ -148,12 +151,12 @@ export function designForItem(item: DesignItem, seq: () => string): DesignOutput
     case 'Integration': {
       const pos = scenario('Positive', `Integration works end to end (${ref})`);
       tc(pos, {
-        title: `${gist}: successful call`, description: `API/integration contract test for ${req}.`, technique: 'UseCase', testType: 'API', automationCandidate: true, suites: ['Smoke', 'Regression'],
+        title: `${gist}: successful call`, description: `API/integration contract test for ${req}.`, technique: 'UseCase', testType: 'API', automationCandidate: false, suites: ['Smoke', 'Regression'],
         steps: steps(['Trigger the operation that calls the external system with valid data', 'Request is sent with the agreed contract (endpoint, headers, payload)'], ['Inspect the response and the application state', `Successful response is handled: ${req}`]),
       });
       const neg = scenario('Negative', `Integration failures are handled (${ref})`);
       tc(neg, {
-        title: `${gist}: errors, timeouts and invalid responses handled`, description: `Error guessing for ${req}.`, technique: 'ErrorGuessing', testType: 'Integration', automationCandidate: true,
+        title: `${gist}: errors, timeouts and invalid responses handled`, description: `Error guessing for ${req}.`, technique: 'ErrorGuessing', testType: 'Integration', automationCandidate: false,
         steps: steps(['Simulate a timeout from the external system', 'User sees a friendly error; no duplicate transaction; retry is possible'], ['Simulate HTTP 4xx and 5xx responses', 'Errors are logged and shown appropriately; data stays consistent'], ['Simulate a malformed/partial response', 'Response is rejected safely; no crash or corrupted data']),
       });
       break;

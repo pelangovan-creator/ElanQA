@@ -32,7 +32,16 @@
     "setupFiles": [
       "<rootDir>/test/setup-env.ts"
     ],
-    "globalSetup": "<rootDir>/test/global-setup.ts"
+    "globalSetup": "<rootDir>/test/global-setup.ts",
+    "roots": [
+      "<rootDir>/src",
+      "<rootDir>/test"
+    ],
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/storage/",
+      "/test-storage/"
+    ]
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.3.0",
@@ -42,6 +51,7 @@
     "@nestjs/jwt": "^11.0.2",
     "@nestjs/platform-express": "^11.2.8",
     "@nestjs/throttler": "^6.7.1",
+    "@playwright/test": "^1.63.0",
     "@prisma/client": "^6.19.3",
     "@tesseract.js-data/eng": "^1.0.0",
     "bcryptjs": "^3.0.3",

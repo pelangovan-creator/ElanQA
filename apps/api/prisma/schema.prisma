@@ -379,9 +379,13 @@ model TestEnvironment {
   baseUrl            String
   browsers           String   @default("[\"chromium\"]") // JSON
   viewport           String? // JSON {width,height} or device name
-  credentialsEnc     String? // encrypted JSON of test accounts
+  credentialsEnc     String? // encrypted JSON { role: { username, password } }
+  modulePaths        String? // JSON { "Login": "/login", ... } - module → URL path
+  envType            String   @default("QA") // QA | UAT | Staging
   workers            Int      @default(2)
   retries            Int      @default(0)
+  timeoutMs          Int      @default(30000)
+  lastProbe          String? // JSON: discovered labels/buttons per module path
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
@@ -413,6 +417,8 @@ model TestRun {
   mode          String // All | Selected | Module | Priority | Smoke | Regression | RerunFailed | Manual
   filter        String? // JSON
   status        String   @default("Queued") // Queued | Running | Completed | Aborted | Error
+  kind          String   @default("Automated") // Automated | Manual
+  summary       String? // JSON: browsers, notAutomated TC IDs, error
   total         Int      @default(0)
   passed        Int      @default(0)
   failed        Int      @default(0)
@@ -436,6 +442,8 @@ model TestResult {
   runId        String
   testCaseId   String
   status       String // Pass | Fail | Blocked | Skipped
+  title        String?
+  retries      Int      @default(0)
   browser      String?
   durationMs   Int?
   error        String?

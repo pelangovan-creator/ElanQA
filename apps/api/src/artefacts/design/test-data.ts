@@ -68,11 +68,20 @@ export function syntheticData(field: FieldInfo, nums: { min?: number; max?: numb
       break;
     case 'Password':
       d.validValues = [passwordOfLength(Math.max(nums.min ?? 8, Math.min(nums.max ?? 12, 12)))];
-      d.invalidValues = ['password (no upper case/digit/symbol)', 'PASSWORD1! (no lower case)', 'Password! (no digit)', 'Password1 (no symbol)'];
+      // Invalid classes follow what THIS requirement states - a generic password policy would create false failures.
+      d.invalidValues = [
+        ...(/\b(digit|number|numeric)/i.test(item.text) ? ['Password!x (no digit)'] : []),
+        ...(/\bupper/i.test(item.text) ? ['password1! (no upper case)'] : []),
+        ...(/\blower/i.test(item.text) ? ['PASSWORD1! (no lower case)'] : []),
+        ...(/\b(special|symbol)/i.test(item.text) ? ['Password12 (no symbol)'] : []),
+        ...(nums.min !== undefined ? [`${passwordOfLength(nums.min - 1)} (too short)`] : []),
+        ...(nums.max !== undefined ? [`${passwordOfLength(nums.max + 1)} (too long)`] : []),
+      ];
+      if (!d.invalidValues.length) d.invalidValues = ['a1! (too short / weak - confirm the policy)'];
       break;
     case 'Card':
       d.validValues = ['4111111111111111 (Visa test card)', '5555555555554444 (Mastercard test card)'];
-      d.invalidValues = ['4111111111111112 (fails Luhn)', '411111111111111 (15 digits)', '41111111111111111 (17 digits)', '4111-1111-1111-111a (letters)'];
+      d.invalidValues = ['411111111111111 (15 digits)', '41111111111111111 (17 digits)', '411111111111111a (letters)', ...(/\b(luhn|valid)\b/i.test(item.text) ? ['4111111111111112 (fails Luhn)'] : [])];
       d.notes = 'Public test card numbers only - never use real cards.';
       break;
     case 'Phone':

@@ -33,6 +33,8 @@ export function classify(text: string, sourceKind: string, isTableHeader = false
   if (sourceKind === 'Header' || isTableHeader) return { category: 'Informational' };
   // Captions label figures/tables; they only carry a requirement when they contain a modal verb.
   if (sourceKind === 'Caption' && !/\b(shall|must|should|will)\b/i.test(text)) return { category: 'Informational' };
+  // "An error message is shown/displayed ..." describes UI feedback, not a field rule.
+  if (/\b(error|warning|success|confirmation) (message|banner|toast)s? (is|are) (shown|displayed)/i.test(text)) return { category: 'UIUX' };
   // Non-functional first: measurable quality attributes.
   for (const [sub, re] of NFR_RULES) {
     if (re.test(text) && !/\b(out of scope|assum\w*)\b/i.test(text)) {
