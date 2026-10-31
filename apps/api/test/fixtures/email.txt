@@ -1,0 +1,6 @@
+Hi team,
+
+Please add a "Buy again" button on the order history page. It may need to support bulk orders.
+
+Thanks,
+Ravi

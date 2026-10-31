@@ -5,12 +5,13 @@ import { api, download } from '../lib/api';
 import { useProject } from '../lib/project';
 import { ROLE_LABEL, ROLES, type Role } from '../lib/types';
 import { Alert, Badge, Button, Card, Field, PageHeader, Select, Table } from '../components/ui';
+import { LatestAlertCard } from './Monitoring';
 
 const STLC = [
   ['Requirement analysis', 'Upload BRD/SRS, zero-miss extraction, coverage & RTM', 2],
   ['Test design', 'Clarifications, scenarios, test cases, techniques, plan, data', 3],
   ['Test execution', 'Playwright automation and guided manual runs', 4],
-  ['Defect management', 'Auto-defects with screenshots, Jira push & sync', 5],
+  ['Defect management', 'Auto-defects with screenshots, evidence and a step-by-step Jira guide', 5],
   ['Monitoring & reporting', '9:30 / 18:00 IST checks, DSR, WSR, defect report', 7],
   ['Test closure', 'Closure report with open-defect risk assessment', 9],
 ] as const;
@@ -23,13 +24,14 @@ export function Overview() {
     <>
       <PageHeader title={current.name} subtitle={`${current.key} · ${current.client ?? 'No client'} · ${current.status}`}
         actions={can('project.export') && <Button variant="secondary" onClick={() => download(`/projects/${current.id}/export`, `${current.key}-backup.json`)}>Export full project backup</Button>} />
+      <LatestAlertCard />
       <Card title="Life cycle" className="mb-6">
         <ol className="grid gap-3 md:grid-cols-3">
           {STLC.map(([t, d, phase], i) => (
             <li key={t} className="rounded-md border border-slate-200 p-3">
               <p className="text-sm font-semibold">{i + 1}. {t}</p>
               <p className="text-xs text-slate-600">{d}</p>
-              <p className="mt-2"><Badge color="gray">Arrives in phase {phase}</Badge></p>
+              <p className="mt-2">{phase <= 9 ? <Link to={({ 2: "/requirements", 3: "/artefacts", 4: "/execution", 5: "/defects", 7: "/reports", 9: "/closure" } as Record<number, string>)[phase]} className="text-sm text-brand-700 underline">Open</Link> : <Badge color="gray">Arrives in phase {phase}</Badge>}</p>
             </li>
           ))}
         </ol>

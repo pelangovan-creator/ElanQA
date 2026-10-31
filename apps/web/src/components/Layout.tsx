@@ -2,6 +2,9 @@ import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 import { useProject } from '../lib/project';
 import { ROLE_LABEL } from '../lib/types';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '../lib/api';
+import type { MonitorCheck } from '../lib/types';
 import { Badge, Button } from './ui';
 
 /** Navigation for the full STLC. Items for later phases are listed but marked "Coming soon". */
@@ -16,11 +19,14 @@ const NAV: { to: string; label: string; phase: number }[] = [
   { to: '/closure', label: 'Test Closure', phase: 9 },
   { to: '/audit', label: 'Audit Trail', phase: 1 },
 ];
-const CURRENT_PHASE = 1;
+const CURRENT_PHASE = 9;
 
 export function Layout() {
   const { user, logout } = useAuth();
   const { projects, current, currentId, setCurrentId } = useProject();
+  // Red badge on "Defect Monitoring" with the open Blocker/Critical/P1 count from the latest check.
+  const latest = useQuery({ queryKey: ['monitor-check', current?.id, 'latest'], queryFn: () => api<MonitorCheck | null>(`/projects/${current!.id}/monitoring/checks/latest`), enabled: !!current, refetchInterval: 60_000 });
+  const alerts = latest.data && 'summary' in latest.data ? latest.data.criticalCount : 0;
 
   return (
     <div className="min-h-screen md:flex">
@@ -40,7 +46,9 @@ export function Layout() {
         </div>
         <nav aria-label="Main" className="flex flex-row flex-wrap gap-1 px-2 pb-3 md:flex-col">
           {NAV.map((n) => n.phase <= CURRENT_PHASE ? (
-            <NavLink key={n.to} to={n.to} end className={({ isActive }) => `rounded px-3 py-2 text-sm ${isActive ? 'bg-white/20 font-semibold' : 'hover:bg-white/10'}`}>{n.label}</NavLink>
+            <NavLink key={n.to} to={n.to} end={n.to === '/'} className={({ isActive }) => `flex items-center justify-between rounded px-3 py-2 text-sm ${isActive ? 'bg-white/20 font-semibold' : 'hover:bg-white/10'}`}>
+              {n.label}{n.to === '/monitoring' && alerts > 0 && <span className="rounded-full bg-red-600 px-2 text-xs font-bold text-white" aria-label={`${alerts} open Blocker, Critical or P1 defects`}>{alerts}</span>}
+            </NavLink>
           ) : (
             <span key={n.to} aria-disabled="true" className="flex items-center justify-between rounded px-3 py-2 text-sm text-brand-100/80">
               {n.label}<span className="text-[10px] uppercase">Soon</span>

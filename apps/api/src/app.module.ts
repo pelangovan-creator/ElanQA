@@ -8,6 +8,13 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { ProjectsModule } from './projects/projects.module';
 import { AuditModule } from './audit/audit.module';
+import { AiModule } from './ai/ai.service';
+import { RequirementsModule } from './requirements/requirements.module';
+import { ArtefactsModule } from './artefacts/artefacts.module';
+import { ExecutionModule } from './execution/execution.module';
+import { DefectsModule } from './defects/defects.module';
+import { MonitoringModule } from './monitoring/monitoring.module';
+import { ReportsModule } from './reports/reports.module';
 import { HealthController } from './health/health.controller';
 
 @Module({
@@ -20,6 +27,13 @@ import { HealthController } from './health/health.controller';
     UsersModule,
     ProjectsModule,
     AuditModule,
+    AiModule,
+    RequirementsModule,
+    ArtefactsModule,
+    ExecutionModule,
+    DefectsModule,
+    MonitoringModule,
+    ReportsModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],

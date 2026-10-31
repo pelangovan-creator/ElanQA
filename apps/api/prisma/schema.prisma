@@ -282,6 +282,7 @@ model TestCase {
   testType            String // Smoke | Functional | API | Security ...
   technique           String // EquivalencePartitioning | BVA | DecisionTable ...
   automationCandidate Boolean  @default(false)
+  suites              String? // JSON array: Smoke | Sanity | Regression
   automatedScriptId   String?
   actualResult        String?
   executedBy          String?
@@ -378,9 +379,13 @@ model TestEnvironment {
   baseUrl            String
   browsers           String   @default("[\"chromium\"]") // JSON
   viewport           String? // JSON {width,height} or device name
-  credentialsEnc     String? // encrypted JSON of test accounts
+  credentialsEnc     String? // encrypted JSON { role: { username, password } }
+  modulePaths        String? // JSON { "Login": "/login", ... } - module → URL path
+  envType            String   @default("QA") // QA | UAT | Staging
   workers            Int      @default(2)
   retries            Int      @default(0)
+  timeoutMs          Int      @default(30000)
+  lastProbe          String? // JSON: discovered labels/buttons per module path
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
@@ -412,6 +417,8 @@ model TestRun {
   mode          String // All | Selected | Module | Priority | Smoke | Regression | RerunFailed | Manual
   filter        String? // JSON
   status        String   @default("Queued") // Queued | Running | Completed | Aborted | Error
+  kind          String   @default("Automated") // Automated | Manual
+  summary       String? // JSON: browsers, notAutomated TC IDs, error
   total         Int      @default(0)
   passed        Int      @default(0)
   failed        Int      @default(0)
@@ -435,6 +442,8 @@ model TestResult {
   runId        String
   testCaseId   String
   status       String // Pass | Fail | Blocked | Skipped
+  title        String?
+  retries      Int      @default(0)
   browser      String?
   durationMs   Int?
   error        String?
@@ -483,6 +492,8 @@ model Defect {
   retestResult    String?
   closedDate      DateTime?
   duplicateOfId   String?
+  duplicateCandidates String? // JSON [{defectId, id, score, reason}] suggested when the draft was created
+  testResultId    String? // the failed result that produced this defect (auto-created)
   jiraKey         String?
   jiraUrl         String?
   jiraStatus      String?
@@ -534,13 +545,18 @@ model MonitorCheck {
   id         String   @id @default(cuid())
   projectId  String
   slot       String // Morning | Evening | Manual
+  scheduledFor String? // "2026-10-31 Morning" in the project time zone - one check per slot per day
+  late       Boolean  @default(false) // run after the slot time (e.g. server was down)
   summary    String // JSON alert summary
   criticalCount Int   @default(0)
+  breachedCount Int   @default(0)
   delivered  String? // JSON of channels delivered
+  triggeredBy String? // user id for manual checks
   createdAt  DateTime @default(now())
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
+  @@unique([projectId, scheduledFor])
   @@index([projectId, createdAt])
 }
 

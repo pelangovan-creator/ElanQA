@@ -7,6 +7,16 @@ import { Overview } from './pages/Overview';
 import { Projects } from './pages/Projects';
 import { Users } from './pages/Users';
 import { Audit } from './pages/Audit';
+import { Requirements } from './pages/Requirements';
+import { TestArtefacts } from './pages/TestArtefacts';
+import { TestExecution } from './pages/TestExecution';
+import { RunView } from './pages/execution/RunView';
+import { ManualRun } from './pages/execution/ManualRun';
+import { Defects } from './pages/Defects';
+import { DefectDetail } from './pages/DefectDetail';
+import { Monitoring } from './pages/Monitoring';
+import { Reports } from './pages/Reports';
+import { Closure } from './pages/Closure';
 
 export function App() {
   const { user, loading } = useAuth();
@@ -19,6 +29,16 @@ export function App() {
           <Route index element={<Overview />} />
           <Route path="projects" element={<Projects />} />
           <Route path="audit" element={<Audit />} />
+          <Route path="requirements" element={<Requirements />} />
+          <Route path="artefacts" element={<TestArtefacts />} />
+          <Route path="execution" element={<TestExecution />} />
+          <Route path="execution/runs/:runId" element={<RunView />} />
+          <Route path="execution/manual/:runId" element={<ManualRun />} />
+          <Route path="defects" element={<Defects />} />
+          <Route path="defects/:id" element={<DefectDetail />} />
+          <Route path="monitoring" element={<Monitoring />} />
+          <Route path="reports" element={<Reports />} />
+          <Route path="closure" element={<Closure />} />
           {user.role === 'Admin' && <Route path="users" element={<Users />} />}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

@@ -14,4 +14,15 @@ export class IdService {
     });
     return `${prefix}-${String(counter.value).padStart(pad, '0')}`;
   }
+
+  /** Atomically reserve `count` consecutive numbers; returns the first one. */
+  async reserve(projectId: string, prefix: string, count: number): Promise<number> {
+    if (count <= 0) return 0;
+    const counter = await this.prisma.idCounter.upsert({
+      where: { projectId_prefix: { projectId, prefix } },
+      create: { projectId, prefix, value: count },
+      update: { value: { increment: count } },
+    });
+    return counter.value - count + 1;
+  }
 }
