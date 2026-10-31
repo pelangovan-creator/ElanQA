@@ -19,7 +19,7 @@ const NAV: { to: string; label: string; phase: number }[] = [
   { to: '/closure', label: 'Test Closure', phase: 9 },
   { to: '/audit', label: 'Audit Trail', phase: 1 },
 ];
-const CURRENT_PHASE = 7;
+const CURRENT_PHASE = 8;
 
 export function Layout() {
   const { user, logout } = useAuth();

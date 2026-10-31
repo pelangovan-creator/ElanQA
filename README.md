@@ -21,8 +21,8 @@ QA Pilot is an end-to-end QA management and test automation platform. It takes a
 | 5 | Auto-defects with screenshots/attachments, defect management | |
 | 6 | Jira: manual step-by-step guide with illustrated screens (no Jira connection, by decision) | ✅ Done |
 | 7 | Morning/evening defect monitoring (in-app delivery) | ✅ Done |
-| 8 | DSR, WSR, Defect Report, Dashboard | ⏳ Next |
-| 9 | Test Closure Report with risk highlighting | |
+| 8 | DSR, WSR, Defect Report, Dashboard | ✅ Done |
+| 9 | Test Closure Report with risk highlighting | ⏳ Next |
 | 10 | Hardening, tests, Docker | |
 
 ## Run locally (SQLite)
@@ -241,6 +241,19 @@ Also available with one click:
   - It wakes every minute and checks each project's local time.
   - A slot runs **once per day**; a database unique constraint enforces this even with several API instances.
   - A check missed while the server was down is **caught up within 3 hours** and marked *late*.
+
+## Reports & dashboard (Phase 8)
+
+**Reports & Dashboard** has four tabs.
+
+- **Dashboard:** live KPI tiles (requirement coverage %, execution %, pass %, open defects, a red **Blocker/Critical/P1** count, drafts to review). Charts: test case status, RTM execution status, open defects by severity and by priority, the burn-down of test cases not yet executed (with an ideal line), and defects opened vs closed per day. Time range 7, 14, 30 or 90 days; refreshes every minute.
+- **Daily Status Report (DSR), Weekly Status Report (WSR) and Defect Report:** generated for a date or period in the project's time zone, with every field from sections 8.1–8.3 filled in from project data.
+  - **DSR:** execution summary (today and to date), defect summary (new, open, closed, reopened, by severity and priority), the Blocker/Critical/P1 list in red, tasks completed and planned, tester-wise progress, blockers, risks, open clarification questions, environment downtime and comments.
+  - **WSR:** a suggested **RAG** status with its reason, planned vs actual, coverage, design progress (created/reviewed/approved), weekly execution trend, opened-vs-closed trend, burn-down, defects by severity and module, defect density per module, ageing, risks, accomplishments, next week's plan, milestones, escalations, resource utilisation and client action items.
+  - **Defect Report:** totals by severity, priority, status, module, assignee and type; ageing buckets (0–2, 3–5, 6–10, >10 days); reopen and rejection rates; **defect leakage** once you enter the UAT/production defect counts; trend chart; the full defect list. Screenshots are embedded in the PDF/Word export.
+- **Editing:** reports are **editable while in Draft** (header, narrative and inputs). **Refresh data** re-pulls the numbers but keeps your edits. Status moves Draft → Final → Sent; a Final report can go back to Draft, and a Sent report is locked.
+- **Exports:** **PDF, Excel and Word** (charts embedded as images, high-impact rows in red), plus an **e-mail draft (.eml)** containing an HTML summary with the PDF attached. You open it in your own mail program, add recipients and send. QA Pilot sends nothing itself.
+- **Charts:** dependency-free SVG, shown inline with a tooltip on every mark and a text "Data" view for screen readers. Colours were checked with a palette validator: blue/orange for two series, one blue ramp for ordered categories, fixed status colours for pass/fail/blocked, always with labels.
 
 ## Security and compliance features (Phase 1)
 

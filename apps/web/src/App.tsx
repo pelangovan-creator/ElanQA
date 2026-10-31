@@ -15,6 +15,7 @@ import { ManualRun } from './pages/execution/ManualRun';
 import { Defects } from './pages/Defects';
 import { DefectDetail } from './pages/DefectDetail';
 import { Monitoring } from './pages/Monitoring';
+import { Reports } from './pages/Reports';
 
 export function App() {
   const { user, loading } = useAuth();
@@ -35,6 +36,7 @@ export function App() {
           <Route path="defects" element={<Defects />} />
           <Route path="defects/:id" element={<DefectDetail />} />
           <Route path="monitoring" element={<Monitoring />} />
+          <Route path="reports" element={<Reports />} />
           {user.role === 'Admin' && <Route path="users" element={<Users />} />}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

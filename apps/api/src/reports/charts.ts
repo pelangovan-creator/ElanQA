@@ -72,7 +72,8 @@ export function lines(title: string, x: string[], series: Series[], w = 640, h =
   const max = nice(Math.max(1, ...series.flatMap((s) => s.values)));
   const X = (i: number) => l + (x.length <= 1 ? pw / 2 : (i / (x.length - 1)) * pw);
   const Y = (v: number) => t + ph - (v / max) * ph;
-  const ticks = [0, max / 2, max].map((v) => `<line x1="${l}" x2="${l + pw}" y1="${Y(v)}" y2="${Y(v)}" stroke="${v === 0 ? C.axis : C.grid}"/><text x="${l - 6}" y="${Y(v) + 4}" text-anchor="end" fill="${C.muted}" style="font-variant-numeric:tabular-nums">${Math.round(v)}</text>`).join('');
+  // Integer counts: show the midpoint only when it is a whole number (avoids "0, 1, 1").
+  const ticks = (Number.isInteger(max / 2) ? [0, max / 2, max] : [0, max]).map((v) => `<line x1="${l}" x2="${l + pw}" y1="${Y(v)}" y2="${Y(v)}" stroke="${v === 0 ? C.axis : C.grid}"/><text x="${l - 6}" y="${Y(v) + 4}" text-anchor="end" fill="${C.muted}" style="font-variant-numeric:tabular-nums">${Math.round(v)}</text>`).join('');
   const step = Math.max(1, Math.ceil(x.length / 7));
   const xl = x.map((d, i) => (i % step === 0 || i === x.length - 1 ? `<text x="${X(i)}" y="${t + ph + 18}" text-anchor="middle" fill="${C.muted}">${esc(d)}</text>` : '')).join('');
   const paths = series.map((s) => {
