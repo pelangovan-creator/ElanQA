@@ -57,7 +57,7 @@ export function RunView() {
       </Card>
       {r.kind === 'Automated' && (
         <Card title="Live log" className="mb-4">
-          <pre ref={logRef} className="max-h-72 overflow-auto rounded bg-slate-900 p-3 text-xs leading-5 text-slate-100" tabIndex={0} aria-label="Run log">{r.log}</pre>
+          <pre ref={logRef} className="max-h-72 overflow-auto rounded bg-slate-900 p-3 text-xs leading-5 text-slate-100" tabIndex={0} role="region" aria-label="Run log">{r.log}</pre>
         </Card>
       )}
       <Card title={`Results (${r.results.length})`}>
@@ -99,7 +99,7 @@ function ResultDetail({ result }: { result: RunResult }) {
           ))}
         </ol>
       )}
-      {images.length > 0 && <div className="grid gap-3 md:grid-cols-3">{images.map((a) => <Thumb key={a.id} a={a} />)}</div>}
+      {images.length > 0 && <div className="grid grid-cols-1 gap-3 md:grid-cols-3">{images.map((a) => <Thumb key={a.id} a={a} />)}</div>}
       {files.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {files.map((a) => <EvidenceButton key={a.id} a={a} />)}

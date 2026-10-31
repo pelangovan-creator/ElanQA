@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Param, Patch, Post, Query, Res, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { fileHeaders } from '../common/file-type';
 import { IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
 import type { Response } from 'express';
 import { AuthUser, CurrentUser, RequirePermission } from '../common/decorators';
@@ -64,8 +65,8 @@ export class RequirementsController {
   @RequirePermission('project.view')
   async original(@Param('projectId') projectId: string, @Param('versionId') versionId: string, @Res() res: Response) {
     const f = await this.reqs.original(projectId, versionId);
-    res.setHeader('Content-Type', f.mimeType);
-    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(f.fileName)}"`);
+    // Always a download, never rendered: the stored type is only what the uploader's browser claimed.
+    res.set({ ...fileHeaders(f.mimeType, f.data, f.fileName), 'Content-Disposition': `attachment; filename="${encodeURIComponent(f.fileName)}"` });
     res.send(f.data);
   }
 

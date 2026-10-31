@@ -1,5 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Res, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { fileHeaders } from '../common/file-type';
 import type { Response } from 'express';
 import { AuthUser, CurrentUser, RequirePermission } from '../common/decorators';
 import { EnvironmentsService } from './environments.service';
@@ -63,9 +64,7 @@ export class ExecutionController {
   @Get('attachments/:id') @RequirePermission('project.view')
   async attachment(@Param('projectId') p: string, @Param('id') id: string, @Res() res: Response) {
     const a = await this.runs.attachment(p, id);
-    res.setHeader('Content-Type', a.mimeType);
-    res.setHeader('Content-Disposition', `${a.mimeType.startsWith('image/') ? 'inline' : 'attachment'}; filename="${encodeURIComponent(a.fileName)}"`);
-    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.set(fileHeaders(a.mimeType, a.data, a.fileName));
     res.send(a.data);
   }
 }

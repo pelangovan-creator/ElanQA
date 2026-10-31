@@ -2,7 +2,7 @@ export type Role = 'Admin' | 'QALead' | 'Tester' | 'Developer' | 'Client';
 export const ROLES: Role[] = ['Admin', 'QALead', 'Tester', 'Developer', 'Client'];
 export const ROLE_LABEL: Record<Role, string> = { Admin: 'Admin', QALead: 'QA Lead', Tester: 'Tester', Developer: 'Developer', Client: 'Client (view-only)' };
 
-export interface User { id: string; email: string; name: string; role: Role; active?: boolean; lastLoginAt?: string | null }
+export interface User { id: string; email: string; name: string; role: Role; active?: boolean; lastLoginAt?: string | null; lockedUntil?: string | null }
 export interface ProjectSummary {
   id: string; key: string; name: string; client?: string | null; description?: string | null; status: string;
   startDate?: string | null; endDate?: string | null; myRole?: Role; memberCount?: number;

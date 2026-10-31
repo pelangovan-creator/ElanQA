@@ -70,7 +70,13 @@ export class MetricsService {
     const start = startOfLocalDay(from, tz);
     const end = startOfLocalDay(addDays(to, 1), tz);
     const inPeriod = (d: Date | null | undefined) => !!d && d >= start && d < end;
-    const local = (d: Date) => zoned(d, tz).date;
+    const localCache = new Map<number, string>();
+    const local = (d: Date) => {
+      const k = d.getTime();
+      let v = localCache.get(k);
+      if (v === undefined) { v = zoned(d, tz).date; localCache.set(k, v); }
+      return v;
+    };
 
     const [tcs, results, defects, history, questions, runs, coverage] = await Promise.all([
       this.prisma.testCase.findMany({ where: { projectId }, select: { id: true, status: true, reviewStatus: true, module: true, createdAt: true, automatedScriptId: true, requirements: { select: { requirementId: true } } } }),

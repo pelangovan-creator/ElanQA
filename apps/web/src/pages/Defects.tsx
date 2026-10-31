@@ -7,7 +7,7 @@ import { useProject } from '../lib/project';
 import {
   DEFECT_STATUS_LABEL, DEFECT_STATUSES, DEFECT_TYPES, isHighImpact, PRIORITIES, PRIORITY_DEF, SEVERITIES, SEVERITY_DEF, type Defect,
 } from '../lib/types';
-import { Alert, Badge, Button, Card, Field, PageHeader, Select, Table } from '../components/ui';
+import { Alert, Badge, Button, Card, Field, PageHeader, Select, Table, useShowMore } from '../components/ui';
 import { Tooltip } from '../components/Tooltip';
 import { Tabs } from '../components/Tabs';
 import { ExportButtons } from './artefacts/shared';
@@ -39,7 +39,7 @@ export function Defects() {
       {creating && <NewDefect onDone={() => setCreating(false)} />}
       <details className="mb-4 rounded border border-slate-200 bg-white p-3 text-sm">
         <summary className="cursor-pointer font-semibold">Severity & priority definitions</summary>
-        <div className="mt-2 grid gap-4 md:grid-cols-2">
+        <div className="mt-2 grid grid-cols-1 gap-4 md:grid-cols-2">
           <dl>{SEVERITIES.map((s) => <div key={s}><dt className="inline font-semibold">{s}: </dt><dd className="inline">{SEVERITY_DEF[s]}</dd></div>)}</dl>
           <dl>{PRIORITIES.map((p) => <div key={p}><dt className="inline font-semibold">{p}: </dt><dd className="inline">{PRIORITY_DEF[p]}</dd></div>)}</dl>
         </div>
@@ -62,9 +62,10 @@ function DefectList() {
   const rows = (q.data ?? []).filter((d) => !f.openOnly || d.open);
   const modules = [...new Set((q.data ?? []).map((d) => d.module).filter(Boolean))] as string[];
   const critical = rows.filter((d) => d.open && isHighImpact(d)).length;
+  const page = useShowMore(rows);
   return (
     <Card title={<>Defects ({rows.length}) {critical > 0 && <Badge color="red">{critical} open Blocker/Critical/P1</Badge>}</>} actions={<ExportButtons fullPath={`${dbase(current!.id)}/export`} name="Defect-List" />}>
-      <form className="mb-3 grid gap-2 md:grid-cols-6" onSubmit={(e) => e.preventDefault()} aria-label="Filter defects">
+      <form className="mb-3 grid grid-cols-1 gap-2 md:grid-cols-6" onSubmit={(e) => e.preventDefault()} aria-label="Filter defects">
         <Field label="Search" value={f.q} onChange={(e) => setF({ ...f, q: e.target.value })} />
         <Select label="Status" value={f.status} onChange={(e) => setF({ ...f, status: e.target.value })}><option value="">All</option>{DEFECT_STATUSES.map((s) => <option key={s} value={s}>{DEFECT_STATUS_LABEL[s]}</option>)}</Select>
         <Select label="Severity" value={f.severity} onChange={(e) => setF({ ...f, severity: e.target.value })}><option value="">All</option>{SEVERITIES.map((s) => <option key={s}>{s}</option>)}</Select>
@@ -73,12 +74,12 @@ function DefectList() {
         <label className="flex items-end gap-2 pb-2 text-sm"><input type="checkbox" checked={f.openOnly} onChange={(e) => setF({ ...f, openOnly: e.target.checked })} /> Open only</label>
       </form>
       <Table head={['ID', 'Title', 'Severity', 'Priority', 'Status', 'Module', 'Assigned to', 'Age (d)', 'Jira']} caption="Defects">
-        {rows.map((d) => {
+        {page.visible.map((d) => {
           const hot = d.open && isHighImpact(d);
           return (
             <tr key={d.id} className={hot ? 'bg-red-50 font-semibold text-red-900' : undefined}>
               <td className="whitespace-nowrap px-2 py-2 font-mono text-xs"><Link className="underline" to={`/defects/${d.id}`}>{d.defectId}</Link></td>
-              <td className="px-2 py-2"><Link to={`/defects/${d.id}`} className="hover:underline">{d.title}</Link>{d.testCase && <span className="block text-xs font-normal text-slate-500">{d.testCase.tcId}{d.testRunId ? ` · ${d.testRunId}` : ''}</span>}</td>
+              <td className="px-2 py-2"><Link to={`/defects/${d.id}`} className="hover:underline">{d.title}</Link>{d.testCase && <span className="block text-xs font-normal text-slate-700">{d.testCase.tcId}{d.testRunId ? ` · ${d.testRunId}` : ''}</span>}</td>
               <td className="px-2 py-2"><SeverityBadge s={d.severity} /></td>
               <td className="px-2 py-2"><PriorityBadge p={d.priority} /></td>
               <td className="px-2 py-2 text-xs">{DEFECT_STATUS_LABEL[d.status] ?? d.status}</td>
@@ -90,6 +91,7 @@ function DefectList() {
           );
         })}
       </Table>
+      {page.more}
       {rows.length === 0 && <p className="mt-2 text-sm text-slate-600">No defects match.</p>}
     </Card>
   );
@@ -100,7 +102,7 @@ function DraftList({ rows, run }: { rows: Defect[]; run: string | null }) {
     <Card title={`Draft defects from test runs${run ? ` (${run})` : ''}`}>
       <p className="mb-3 text-sm text-slate-700">Each failed test case produced a draft with its evidence attached. Open a draft to check it, then confirm it, link it to an existing defect, or discard it.</p>
       {rows.length === 0 && <Alert kind="success">No drafts waiting for review.</Alert>}
-      <ul className="grid gap-3 md:grid-cols-2">
+      <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">
         {rows.map((d) => (
           <li key={d.id} className={`flex gap-3 rounded border p-3 ${isHighImpact(d) ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-white'}`}>
             <Thumb defect={d} />
@@ -137,7 +139,7 @@ function NewDefect({ onDone }: { onDone: () => void }) {
   );
   return (
     <Card title="Log a defect" className="mb-4">
-      <form className="grid gap-3 md:grid-cols-4" onSubmit={(e: FormEvent) => { e.preventDefault(); m.mutate(); }}>
+      <form className="grid grid-cols-1 gap-3 md:grid-cols-4" onSubmit={(e: FormEvent) => { e.preventDefault(); m.mutate(); }}>
         <div className="md:col-span-3"><Field label="Title / summary" required minLength={5} value={f.title} onChange={set('title')} placeholder="[Checkout] Payment fails when card expiry is current month" /></div>
         <Field label="Module" value={f.module} onChange={set('module')} />
         <Select label="Severity" value={f.severity} onChange={set('severity')} aria-describedby="sev-help">{SEVERITIES.map((s) => <option key={s}>{s}</option>)}</Select>

@@ -1,4 +1,4 @@
-import { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, SelectHTMLAttributes, useId } from 'react';
+import { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, SelectHTMLAttributes, useEffect, useId, useState } from 'react';
 
 const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(' ');
 
@@ -79,7 +79,8 @@ export function PageHeader({ title, subtitle, actions }: { title: string; subtit
 
 export function Table({ head, children, caption }: { head: string[]; children: ReactNode; caption?: string }) {
   return (
-    <div className="overflow-x-auto">
+    // "relative" keeps visually hidden (absolutely positioned) cell text inside the scroll box on small screens.
+    <div className="relative overflow-x-auto">
       <table className="w-full text-left text-sm">
         {caption && <caption className="sr-only">{caption}</caption>}
         <thead className="border-b border-slate-200 text-xs uppercase text-slate-600">
@@ -89,4 +90,22 @@ export function Table({ head, children, caption }: { head: string[]; children: R
       </table>
     </div>
   );
+}
+
+/**
+ * Renders long lists in pages (default 100 rows) so a project with thousands of test cases stays fast.
+ * Returns the visible slice and a "Show more" control to place under the table.
+ */
+export function useShowMore<T>(rows: T[], step = 100) {
+  const [limit, setLimit] = useState(step);
+  useEffect(() => setLimit(step), [rows.length, step]);
+  const visible = rows.length > limit ? rows.slice(0, limit) : rows;
+  const more = rows.length > limit ? (
+    <div className="mt-3 flex items-center gap-3 text-sm text-slate-700">
+      <span role="status">Showing {visible.length} of {rows.length}</span>
+      <Button variant="secondary" onClick={() => setLimit((l) => l + step)}>Show {Math.min(step, rows.length - limit)} more</Button>
+      <Button variant="ghost" onClick={() => setLimit(rows.length)}>Show all</Button>
+    </div>
+  ) : null;
+  return { visible, more };
 }

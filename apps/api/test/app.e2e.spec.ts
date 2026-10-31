@@ -106,10 +106,12 @@ describe('QA Pilot API - Phase 1 (auth, RBAC, projects, audit)', () => {
   });
 
   it('exports a full project backup', async () => {
-    const res = await api().get(`/api/projects/${ids.shop}/export`).set(as('lead')).expect(200);
+    const res = await api().get(`/api/projects/${ids.shop}/export`).set(as('lead')).buffer(true)
+      .parse((r, cb) => { const c: Buffer[] = []; r.on('data', (d: Buffer) => c.push(d)).on('end', () => cb(null, Buffer.concat(c))); }).expect(200);
     expect(res.headers['content-disposition']).toContain('qa-pilot-SHOP');
-    expect(res.body).toMatchObject({ format: 'qa-pilot-backup', project: { key: 'SHOP' } });
-    expect(res.body.members).toHaveLength(4);
+    const m = JSON.parse(await (await (await import('jszip')).default.loadAsync(res.body)).file('backup.json')!.async('string'));
+    expect(m).toMatchObject({ format: 'qa-pilot-backup', project: { key: 'SHOP' } });
+    expect(m.tables.ProjectMember).toHaveLength(4);
   });
 
   it('user management is Admin-only and enforces password policy', async () => {

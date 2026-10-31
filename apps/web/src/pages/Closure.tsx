@@ -60,7 +60,7 @@ export function Closure() {
                   <p className="font-semibold">{k === 'ClientRequest' ? '•' : t.met ? '✓' : '✗'} {t.label}</p>
                   <p className="text-sm text-slate-700">{t.detail}</p>
                   {k === 'ClientRequest' && can('closure.trigger') && (
-                    <div className="mt-2 grid gap-2 md:grid-cols-[2fr_1fr]">
+                    <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-[2fr_minmax(0,1fr)]">
                       <Field label="Reason for the client's request (required)" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Client must go live on Friday for a regulatory date" />
                       <Field label="Release / version" value={release} onChange={(e) => setRelease(e.target.value)} />
                     </div>
@@ -137,7 +137,7 @@ function Editor({ id }: { id: string }) {
       </Card>
 
       <Card title="Go / No-Go recommendation">
-        <fieldset disabled={!editable} className="grid gap-3 md:grid-cols-[14rem_1fr]">
+        <fieldset disabled={!editable} className="grid grid-cols-1 gap-3 md:grid-cols-[14rem_minmax(0,1fr)]">
           <div className="flex flex-col gap-1"><label htmlFor="dec" className="text-sm font-medium">Recommendation</label>
             <select id="dec" className="min-h-9 rounded-md border border-slate-400 bg-white px-2 text-sm" value={d.recommendation.decision} onChange={(ev) => setDraft({ ...d, recommendation: { ...d.recommendation, decision: ev.target.value as Closure['content']['recommendation']['decision'] } })}>
               <option value="Go">Go</option><option value="ConditionalGo">Conditional Go</option><option value="NoGo">No-Go</option></select></div>
@@ -153,7 +153,7 @@ function Editor({ id }: { id: string }) {
               <fieldset key={x.id} disabled={!editable} className={`rounded-md border p-3 ${x.riskLevel === 'High' ? 'border-red-400 bg-red-50' : x.riskLevel === 'Medium' ? 'border-amber-300 bg-amber-50' : 'border-slate-200'}`}>
                 <legend className="px-1 text-sm font-bold"><Link className="underline" to={`/defects/${x.id}`}>{x.defectId}</Link> {x.title}</legend>
                 <p className="mb-2 flex flex-wrap items-center gap-1 text-xs"><SeverityBadge s={x.severity} /><PriorityBadge p={x.priority} /><Badge>{x.isDraft ? 'Draft (unreviewed)' : DEFECT_STATUS_LABEL[x.status] ?? x.status}</Badge><span className="ml-2">Risk level:</span><Badge color={LEVEL_COLOR[x.riskLevel]}>{x.riskLevel}</Badge></p>
-                <div className="grid gap-2 md:grid-cols-4">
+                <div className="grid grid-cols-1 gap-2 md:grid-cols-4">
                   {(['businessImpact', 'likelihood'] as const).map((k) => (
                     <div key={k} className="flex flex-col gap-1"><label htmlFor={`${k}-${x.id}`} className="text-xs font-medium">{k === 'businessImpact' ? 'Business impact' : 'Likelihood'}</label>
                       <select id={`${k}-${x.id}`} className="min-h-9 rounded border border-slate-400 bg-white px-2 text-sm" value={x[k]} onChange={(ev) => setRisk(i, { [k]: ev.target.value as Level })}>{['High', 'Medium', 'Low'].map((v) => <option key={v}>{v}</option>)}</select></div>
@@ -183,7 +183,7 @@ function Editor({ id }: { id: string }) {
       </Card>
 
       <Card title="Document control & release">
-        <fieldset disabled={!editable} className="grid gap-3 md:grid-cols-4">
+        <fieldset disabled={!editable} className="grid grid-cols-1 gap-3 md:grid-cols-4">
           <legend className="sr-only">Header</legend>
           {r.fields.header.map(([k, label]) => <Field key={k} label={label} value={d.header[k] ?? ''} onChange={(ev) => setDraft({ ...d, header: { ...d.header, [k]: ev.target.value } })} />)}
         </fieldset>
@@ -195,9 +195,9 @@ function Editor({ id }: { id: string }) {
             <div key={String(l)} className="rounded border border-slate-200 bg-white p-2"><p className="text-xs uppercase text-slate-600">{l}</p><p className="text-xl font-bold">{v}</p></div>
           ))}
         </div>
-        <div className="grid gap-4 lg:grid-cols-2">{Object.entries(r.charts).map(([k, svg]) => <Chart key={k} svg={svg} />)}</div>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">{Object.entries(r.charts).map(([k, svg]) => <Chart key={k} svg={svg} />)}</div>
         <p className="mt-3 text-sm">Requirement coverage <strong>{r.content.data.coverage.percent}%</strong> · final RTM: {Object.entries(rtmCounts).map(([k, v]) => `${k} ${v}`).join(' · ') || '—'} · defects {r.content.data.defects.total}, reopen rate {r.content.data.defects.reopenRate}%, rejection rate {r.content.data.defects.rejectionRate}% · {r.content.data.design.automated} automated test cases</p>
-        <div className="mt-3 grid gap-4 md:grid-cols-3 text-sm">
+        <div className="mt-3 grid grid-cols-1 gap-4 md:grid-cols-3 text-sm">
           <div><h3 className="font-semibold">Test types performed</h3><ul className="list-disc pl-5">{r.content.extra.typesPerformed.map((t) => <li key={t.testType}>{t.testType} ({t.count})</li>)}</ul></div>
           <div><h3 className="font-semibold">Techniques applied</h3><ul className="list-disc pl-5">{r.content.extra.techniquesPerformed.map((t) => <li key={t.technique}>{t.technique} ({t.count})</li>)}</ul></div>
           <div><h3 className="font-semibold">Environments</h3><ul className="list-disc pl-5">{r.content.extra.environments.map((x) => <li key={x.name}>{x.name} ({x.envType}) – {x.baseUrl} – {x.browsers}</li>)}{!r.content.extra.environments.length && <li>None configured</li>}</ul></div>
@@ -205,7 +205,7 @@ function Editor({ id }: { id: string }) {
       </Card>
 
       <Card title="Scope, deviations, lessons & recommendations">
-        <fieldset disabled={!editable} className="grid gap-3 md:grid-cols-2">
+        <fieldset disabled={!editable} className="grid grid-cols-1 gap-3 md:grid-cols-2">
           <legend className="sr-only">Narrative</legend>
           {r.fields.narrative.map(([k, label]) => (
             <div key={k} className="flex flex-col gap-1"><label htmlFor={`cn-${k}`} className="text-sm font-medium">{label}</label>
@@ -216,7 +216,7 @@ function Editor({ id }: { id: string }) {
       </Card>
 
       <Card title="Deliverables">
-        <ul className="grid gap-1 text-sm md:grid-cols-2">{r.content.extra.deliverables.map((x) => <li key={x.name}>✓ <strong>{x.name}</strong> <span className="text-slate-600">– {x.where}</span></li>)}</ul>
+        <ul className="grid grid-cols-1 gap-1 text-sm md:grid-cols-2">{r.content.extra.deliverables.map((x) => <li key={x.name}>✓ <strong>{x.name}</strong> <span className="text-slate-600">– {x.where}</span></li>)}</ul>
       </Card>
 
       <SignOff r={r} />
@@ -237,7 +237,7 @@ function SignOff({ r }: { r: Closure }) {
     <Card title="Sign-off">
       {r.status === 'Draft' && <p className="mb-3 text-sm text-slate-600">Sign-off opens once the report is marked final.</p>}
       {m.error && <Alert>{m.error.message}</Alert>}
-      <div className="grid gap-3 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
         {r.content.signOff.map((s) => {
           const mayRecord = r.status === 'Final' && !s.signedAt && (can('closure.trigger') || (isClient && s.role === 'Client'));
           const v = f[s.role] ?? { name: '', decision: 'Approved', comment: '' };

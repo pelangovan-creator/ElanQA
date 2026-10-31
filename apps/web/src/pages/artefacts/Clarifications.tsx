@@ -77,7 +77,7 @@ function QuestionForm({ q, onSaved }: { q: FullQuestion; onSaved: (affected: str
   });
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value });
   return (
-    <form className="grid gap-3 md:grid-cols-3" onSubmit={(e: FormEvent) => { e.preventDefault(); m.mutate(); }}>
+    <form className="grid grid-cols-1 gap-3 md:grid-cols-3" onSubmit={(e: FormEvent) => { e.preventDefault(); m.mutate(); }}>
       <div className="md:col-span-3 flex flex-col gap-1">
         <label htmlFor={`q-${q.id}`} className="text-sm font-medium">Question</label>
         <textarea id={`q-${q.id}`} rows={2} className="rounded-md border border-slate-400 p-2 text-sm" value={f.question} onChange={set('question')} />

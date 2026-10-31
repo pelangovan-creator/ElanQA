@@ -46,7 +46,7 @@ export function JiraGuide({ d, onClose }: { d: DefectDetail; onClose: () => void
           {!q.data && <p role="status">{q.error ? q.error.message : 'Preparing the guide…'}</p>}
           <ol className="space-y-6">
             {q.data?.steps.map((s) => (
-              <li key={s.no} className="grid gap-4 rounded-lg border border-slate-200 p-4 lg:grid-cols-[1fr_1.4fr]">
+              <li key={s.no} className="grid grid-cols-1 gap-4 rounded-lg border border-slate-200 p-4 lg:grid-cols-[minmax(0,1fr)_1.4fr]">
                 <div>
                   <h3 className="text-base font-semibold"><span className="mr-2 inline-flex h-7 w-7 items-center justify-center rounded-full bg-red-600 text-sm text-white" aria-hidden="true">{s.no}</span>Step {s.no}: {s.title}</h3>
                   <p className="mt-2 text-sm">{s.instruction}</p>

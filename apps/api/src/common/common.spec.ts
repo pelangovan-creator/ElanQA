@@ -62,4 +62,10 @@ describe('validateEnv', () => {
   it('accepts valid config', () => {
     expect(() => validateEnv({ DATABASE_URL: 'file:x', JWT_SECRET: 'x'.repeat(32), ENCRYPTION_KEY: 'a'.repeat(64) })).not.toThrow();
   });
+  it('requires PostgreSQL and explicit CORS origins in production', () => {
+    const ok = { JWT_SECRET: 'x'.repeat(32), ENCRYPTION_KEY: 'a'.repeat(64), NODE_ENV: 'production' };
+    expect(() => validateEnv({ ...ok, DATABASE_URL: 'file:./dev.db' })).toThrow(/PostgreSQL/);
+    expect(() => validateEnv({ ...ok, DATABASE_URL: 'postgresql://u:p@db/q', CORS_ORIGIN: '*' })).toThrow(/CORS_ORIGIN/);
+    expect(() => validateEnv({ ...ok, DATABASE_URL: 'postgresql://u:p@db/q', CORS_ORIGIN: 'https://qa.example.com' })).not.toThrow();
+  });
 });

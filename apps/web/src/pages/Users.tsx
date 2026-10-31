@@ -10,14 +10,16 @@ export function Users() {
   const [form, setForm] = useState({ name: '', email: '', role: 'Tester' as Role, password: '' });
   const refresh = () => qc.invalidateQueries({ queryKey: ['users'] });
   const create = useMutation({ mutationFn: () => api('/users', { method: 'POST', json: form }), onSuccess: () => { setForm({ name: '', email: '', role: 'Tester', password: '' }); refresh(); } });
-  const update = useMutation({ mutationFn: ({ id, ...data }: { id: string; role?: Role; active?: boolean }) => api(`/users/${id}`, { method: 'PATCH', json: data }), onSuccess: refresh });
+  const update = useMutation({ mutationFn: ({ id, ...data }: { id: string; role?: Role; active?: boolean; password?: string }) => api(`/users/${id}`, { method: 'PATCH', json: data }), onSuccess: refresh });
+  const [reset, setReset] = useState<{ id: string; name: string; password: string } | null>(null);
+  const now = Date.now();
   const submit = (e: FormEvent) => { e.preventDefault(); create.mutate(); };
 
   return (
     <>
       <PageHeader title="Users" subtitle="Global accounts and default roles. Project roles can be overridden on each project's Team card." />
       <Card title="Add user" className="mb-6">
-        <form onSubmit={submit} className="grid gap-3 md:grid-cols-4">
+        <form onSubmit={submit} className="grid grid-cols-1 gap-3 md:grid-cols-4">
           {create.error && <div className="md:col-span-4"><Alert>{create.error.message}</Alert></div>}
           <Field label="Name" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
           <Field label="Email" type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
@@ -28,6 +30,15 @@ export function Users() {
           <div className="md:col-span-4"><Button type="submit" disabled={create.isPending}>Create user</Button></div>
         </form>
       </Card>
+      {reset && (
+        <Card title={`Reset password – ${reset.name}`} className="mb-6">
+          <form className="flex flex-wrap items-end gap-3" onSubmit={(e) => { e.preventDefault(); update.mutate({ id: reset.id, password: reset.password }, { onSuccess: () => setReset(null) }); }}>
+            <Field label="New password" type="password" autoComplete="new-password" required value={reset.password} onChange={(e) => setReset({ ...reset, password: e.target.value })} hint="Also unlocks the account and signs the user out everywhere" />
+            <Button type="submit" disabled={update.isPending}>Set password</Button>
+            <Button type="button" variant="secondary" onClick={() => setReset(null)}>Cancel</Button>
+          </form>
+        </Card>
+      )}
       <Card>
         {update.error && <Alert>{update.error.message}</Alert>}
         <Table head={['Name', 'Email', 'Role', 'Status', 'Last login', '']} caption="Users">
@@ -41,9 +52,13 @@ export function Users() {
                   {ROLES.map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
                 </select>
               </td>
-              <td className="px-2 py-2"><Badge color={u.active ? 'green' : 'gray'}>{u.active ? 'Active' : 'Disabled'}</Badge></td>
+              <td className="px-2 py-2"><span className="flex flex-wrap gap-1"><Badge color={u.active ? 'green' : 'gray'}>{u.active ? 'Active' : 'Disabled'}</Badge>
+                {u.lockedUntil && new Date(u.lockedUntil).getTime() > now && <Badge color="red">Locked until {new Date(u.lockedUntil).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Badge>}</span></td>
               <td className="px-2 py-2 text-xs">{u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleString() : 'Never'}</td>
-              <td className="px-2 py-2 text-right"><Button variant="ghost" onClick={() => update.mutate({ id: u.id, active: !u.active })}>{u.active ? 'Disable' : 'Enable'}<span className="sr-only"> {u.name}</span></Button></td>
+              <td className="px-2 py-2 text-right whitespace-nowrap">
+                <Button variant="ghost" onClick={() => setReset({ id: u.id, name: u.name, password: '' })}>Reset password<span className="sr-only"> for {u.name}</span></Button>
+                <Button variant="ghost" onClick={() => update.mutate({ id: u.id, active: !u.active })}>{u.active ? 'Disable' : 'Enable'}<span className="sr-only"> {u.name}</span></Button>
+              </td>
             </tr>
           ))}
         </Table>

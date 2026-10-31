@@ -22,7 +22,14 @@ export class AuthController {
     return user;
   }
 
+  @Post('logout-all')
+  @HttpCode(200)
+  logoutAll(@CurrentUser() user: AuthUser) {
+    return this.auth.logoutAll(user.id);
+  }
+
   @Post('change-password')
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @HttpCode(200)
   changePassword(@CurrentUser() user: AuthUser, @Body() dto: ChangePasswordDto) {
     return this.auth.changePassword(user.id, dto.currentPassword, dto.newPassword);

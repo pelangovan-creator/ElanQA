@@ -4,16 +4,16 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, download } from '../lib/api';
 import { useProject } from '../lib/project';
 import { ROLE_LABEL, ROLES, type Role } from '../lib/types';
-import { Alert, Badge, Button, Card, Field, PageHeader, Select, Table } from '../components/ui';
+import { Alert, Button, Card, Field, PageHeader, Select, Table } from '../components/ui';
 import { LatestAlertCard } from './Monitoring';
 
 const STLC = [
-  ['Requirement analysis', 'Upload BRD/SRS, zero-miss extraction, coverage & RTM', 2],
-  ['Test design', 'Clarifications, scenarios, test cases, techniques, plan, data', 3],
-  ['Test execution', 'Playwright automation and guided manual runs', 4],
-  ['Defect management', 'Auto-defects with screenshots, evidence and a step-by-step Jira guide', 5],
-  ['Monitoring & reporting', '9:30 / 18:00 IST checks, DSR, WSR, defect report', 7],
-  ['Test closure', 'Closure report with open-defect risk assessment', 9],
+  ['Requirement analysis', 'Upload BRD/SRS, zero-miss extraction, coverage & RTM', '/requirements'],
+  ['Test design', 'Clarifications, scenarios, test cases, techniques, plan, data', '/artefacts'],
+  ['Test execution', 'Playwright automation and guided manual runs', '/execution'],
+  ['Defect management', 'Auto-defects with screenshots, evidence and a step-by-step Jira guide', '/defects'],
+  ['Monitoring & reporting', 'Morning / evening defect checks, DSR, WSR, defect report, dashboard', '/reports'],
+  ['Test closure', 'Closure report with open-defect risk assessment', '/closure'],
 ] as const;
 
 export function Overview() {
@@ -23,20 +23,20 @@ export function Overview() {
   return (
     <>
       <PageHeader title={current.name} subtitle={`${current.key} · ${current.client ?? 'No client'} · ${current.status}`}
-        actions={can('project.export') && <Button variant="secondary" onClick={() => download(`/projects/${current.id}/export`, `${current.key}-backup.json`)}>Export full project backup</Button>} />
+        actions={can('project.export') && <Button variant="secondary" onClick={() => download(`/projects/${current.id}/export`, `${current.key}-backup.zip`)}>Export full project backup</Button>} />
       <LatestAlertCard />
       <Card title="Life cycle" className="mb-6">
-        <ol className="grid gap-3 md:grid-cols-3">
-          {STLC.map(([t, d, phase], i) => (
+        <ol className="grid grid-cols-1 gap-3 md:grid-cols-3">
+          {STLC.map(([t, d, to], i) => (
             <li key={t} className="rounded-md border border-slate-200 p-3">
               <p className="text-sm font-semibold">{i + 1}. {t}</p>
               <p className="text-xs text-slate-600">{d}</p>
-              <p className="mt-2">{phase <= 9 ? <Link to={({ 2: "/requirements", 3: "/artefacts", 4: "/execution", 5: "/defects", 7: "/reports", 9: "/closure" } as Record<number, string>)[phase]} className="text-sm text-brand-700 underline">Open</Link> : <Badge color="gray">Arrives in phase {phase}</Badge>}</p>
+              <p className="mt-2"><Link to={to} className="text-sm text-brand-700 underline">Open<span className="sr-only"> {t}</span></Link></p>
             </li>
           ))}
         </ol>
       </Card>
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {can('project.manage') && <ProjectDetailsForm />}
         <Members />
         {can('project.manage') && <Settings />}
@@ -128,7 +128,7 @@ function Settings() {
       <Table head={['Key', 'Value', 'Encrypted']} caption="Project settings">
         {q.data?.map((s) => <tr key={s.key}><td className="px-2 py-2 font-mono text-xs">{s.key}</td><td className="px-2 py-2 font-mono text-xs">{s.value}</td><td className="px-2 py-2">{s.encrypted ? 'Yes' : 'No'}</td></tr>)}
       </Table>
-      <form className="mt-4 grid gap-2 md:grid-cols-2" onSubmit={(e) => { e.preventDefault(); m.mutate(); }}>
+      <form className="mt-4 grid grid-cols-1 gap-2 md:grid-cols-2" onSubmit={(e) => { e.preventDefault(); m.mutate(); }}>
         <Field label="Key" required value={form.key} onChange={(e) => setForm({ ...form, key: e.target.value })} placeholder="jira.apiToken" />
         <Field label="Value" required type={form.encrypted ? 'password' : 'text'} autoComplete="off" value={form.value} onChange={(e) => setForm({ ...form, value: e.target.value })} />
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.encrypted} onChange={(e) => setForm({ ...form, encrypted: e.target.checked })} /> Encrypt value</label>

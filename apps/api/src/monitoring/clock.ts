@@ -5,10 +5,19 @@ export function isValidTimeZone(tz: string): boolean {
   try { new Intl.DateTimeFormat('en-US', { timeZone: tz }); return true; } catch { return false; }
 }
 
+// Creating an Intl.DateTimeFormat is expensive (~0.03 ms); reports convert thousands of dates, so reuse one per zone.
+const formatters = new Map<string, Intl.DateTimeFormat>();
+const formatter = (timeZone: string) => {
+  let f = formatters.get(timeZone);
+  if (!f) {
+    f = new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+    formatters.set(timeZone, f);
+  }
+  return f;
+};
+
 export function zoned(now: Date, timeZone: string): ZonedParts {
-  const parts = Object.fromEntries(new Intl.DateTimeFormat('en-CA', {
-    timeZone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
-  }).formatToParts(now).map((p) => [p.type, p.value]));
+  const parts = Object.fromEntries(formatter(timeZone).formatToParts(now).map((p) => [p.type, p.value]));
   const time = `${parts.hour}:${parts.minute}`;
   return { date: `${parts.year}-${parts.month}-${parts.day}`, time, minutes: Number(parts.hour) * 60 + Number(parts.minute) };
 }

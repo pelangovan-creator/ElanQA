@@ -90,7 +90,7 @@ function Dashboard() {
             <Kpi label="Blocker / Critical / P1" value={d.defects.critical.length} tone="red" to="/monitoring" />
             <Kpi label="Drafts to review" value={d.defects.drafts} to="/defects" />
           </div>
-          <div className="grid gap-4 lg:grid-cols-2">{Object.entries(q.data!.charts).map(([k, svg]) => <Chart key={k} svg={svg} />)}</div>
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">{Object.entries(q.data!.charts).map(([k, svg]) => <Chart key={k} svg={svg} />)}</div>
           <CriticalTable rows={d.defects.critical} />
         </>
       )}
@@ -128,7 +128,7 @@ function ReportsTab({ type }: { type: ReportType }) {
     onSuccess: (r) => { qc.invalidateQueries({ queryKey: ['reports'] }); setSel(r.id); },
   });
   return (
-    <div className="grid gap-4 xl:grid-cols-[18rem_1fr]">
+    <div className="grid grid-cols-1 gap-4 xl:grid-cols-[18rem_minmax(0,1fr)]">
       <div className="space-y-4">
         {can('reports.edit') && (
           <Card title="New report">
@@ -192,7 +192,7 @@ function ReportEditor({ id, onDeleted }: { id: string; onDeleted: () => void }) 
             {r.status === 'Final' && <><Button onClick={() => status.mutate('Sent')}>Mark as sent</Button><Button variant="secondary" onClick={() => status.mutate('Draft')}>Back to draft</Button></>}
           </div>
         )}
-        <fieldset disabled={!editable} className="mt-4 grid gap-3 md:grid-cols-3">
+        <fieldset disabled={!editable} className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
           <legend className="sr-only">Report header</legend>
           {r.fields.header.map(([k, label]) => <Field key={k} label={label} value={header[k] ?? ''} onChange={(ev) => setHeader({ ...header, [k]: ev.target.value })} />)}
         </fieldset>
@@ -210,7 +210,7 @@ function ReportEditor({ id, onDeleted }: { id: string; onDeleted: () => void }) 
           <Kpi label="Defect leakage" value={r.derived.leakagePct ?? '—'} suffix={r.derived.leakagePct != null ? '%' : ''} />
         </div>
       )}
-      <div className="grid gap-4 lg:grid-cols-2">{Object.entries(r.charts).map(([k, svg]) => <Chart key={k} svg={svg} />)}</div>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">{Object.entries(r.charts).map(([k, svg]) => <Chart key={k} svg={svg} />)}</div>
       <CriticalTable rows={df.critical} />
       {r.type === 'WSR' && <Card title="Defect density per module"><Table head={['Module', 'Test cases', 'Defects', 'Defects per test case']} caption="Defect density">{d.moduleDensity.map((m) => <tr key={m.module}><td className="px-2 py-2">{m.module}</td><td className="px-2 py-2">{m.testCases}</td><td className="px-2 py-2">{m.defects}</td><td className="px-2 py-2">{m.density}</td></tr>)}</Table></Card>}
       {r.type === 'DSR' && d.openQuestions.length > 0 && <Card title={`Open clarification questions (${d.openQuestions.length})`}><ul className="list-disc pl-5 text-sm">{d.openQuestions.map((x) => <li key={x.qId}><span className="font-mono text-xs">{x.qId}</span> {x.question} <span className="text-slate-600">({x.priority}{x.assignedTo ? `, ${x.assignedTo}` : ''}, {x.ageDays} d)</span></li>)}</ul></Card>}
@@ -230,7 +230,7 @@ function ReportEditor({ id, onDeleted }: { id: string; onDeleted: () => void }) 
       )}
 
       <Card title="Narrative & inputs">
-        <fieldset disabled={!editable} className="grid gap-3 md:grid-cols-2">
+        <fieldset disabled={!editable} className="grid grid-cols-1 gap-3 md:grid-cols-2">
           <legend className="sr-only">Report narrative</legend>
           {r.fields.narrative.map(([k, label]) => k === 'ragStatus' ? (
             <div key={k} className="flex flex-col gap-1"><label htmlFor="rag" className="text-sm font-medium">{label}</label>

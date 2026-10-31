@@ -7,19 +7,18 @@ import { api } from '../lib/api';
 import type { MonitorCheck } from '../lib/types';
 import { Badge, Button } from './ui';
 
-/** Navigation for the full STLC. Items for later phases are listed but marked "Coming soon". */
-const NAV: { to: string; label: string; phase: number }[] = [
-  { to: '/', label: 'Overview', phase: 1 },
-  { to: '/requirements', label: 'Requirements & RTM', phase: 2 },
-  { to: '/artefacts', label: 'Test Artefacts', phase: 3 },
-  { to: '/execution', label: 'Test Execution', phase: 4 },
-  { to: '/defects', label: 'Defects', phase: 5 },
-  { to: '/monitoring', label: 'Defect Monitoring', phase: 7 },
-  { to: '/reports', label: 'Reports & Dashboard', phase: 8 },
-  { to: '/closure', label: 'Test Closure', phase: 9 },
-  { to: '/audit', label: 'Audit Trail', phase: 1 },
+/** Navigation for the full STLC, in life-cycle order. */
+const NAV: { to: string; label: string }[] = [
+  { to: '/', label: 'Overview' },
+  { to: '/requirements', label: 'Requirements & RTM' },
+  { to: '/artefacts', label: 'Test Artefacts' },
+  { to: '/execution', label: 'Test Execution' },
+  { to: '/defects', label: 'Defects' },
+  { to: '/monitoring', label: 'Defect Monitoring' },
+  { to: '/reports', label: 'Reports & Dashboard' },
+  { to: '/closure', label: 'Test Closure' },
+  { to: '/audit', label: 'Audit Trail' },
 ];
-const CURRENT_PHASE = 9;
 
 export function Layout() {
   const { user, logout } = useAuth();
@@ -45,24 +44,20 @@ export function Layout() {
           </select>
         </div>
         <nav aria-label="Main" className="flex flex-row flex-wrap gap-1 px-2 pb-3 md:flex-col">
-          {NAV.map((n) => n.phase <= CURRENT_PHASE ? (
+          {NAV.map((n) => (
             <NavLink key={n.to} to={n.to} end={n.to === '/'} className={({ isActive }) => `flex items-center justify-between rounded px-3 py-2 text-sm ${isActive ? 'bg-white/20 font-semibold' : 'hover:bg-white/10'}`}>
               {n.label}{n.to === '/monitoring' && alerts > 0 && <span className="rounded-full bg-red-600 px-2 text-xs font-bold text-white" aria-label={`${alerts} open Blocker, Critical or P1 defects`}>{alerts}</span>}
             </NavLink>
-          ) : (
-            <span key={n.to} aria-disabled="true" className="flex items-center justify-between rounded px-3 py-2 text-sm text-brand-100/80">
-              {n.label}<span className="text-[10px] uppercase">Soon</span>
-            </span>
           ))}
           <NavLink to="/projects" className={({ isActive }) => `rounded px-3 py-2 text-sm ${isActive ? 'bg-white/20 font-semibold' : 'hover:bg-white/10'}`}>All projects</NavLink>
           {user?.role === 'Admin' && <NavLink to="/users" className={({ isActive }) => `rounded px-3 py-2 text-sm ${isActive ? 'bg-white/20 font-semibold' : 'hover:bg-white/10'}`}>Users</NavLink>}
         </nav>
       </aside>
-      <div className="flex-1">
+      <div className="min-w-0 flex-1">
         <header className="flex items-center justify-between gap-3 border-b border-slate-200 bg-white px-6 py-3">
           <p className="text-sm text-slate-700">{current ? <><strong>{current.name}</strong> · {current.client ?? 'No client'}</> : 'Select or create a project'}</p>
           <div className="flex items-center gap-3">
-            <span className="text-sm">{user?.name}</span>
+            <NavLink to="/account" className="text-sm underline-offset-2 hover:underline" title="My account">{user?.name}<span className="sr-only"> – my account</span></NavLink>
             {current?.myRole && <Badge color="blue">{ROLE_LABEL[current.myRole]}</Badge>}
             <Button variant="secondary" onClick={logout}>Sign out</Button>
           </div>

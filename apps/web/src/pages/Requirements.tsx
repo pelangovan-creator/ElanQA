@@ -6,7 +6,7 @@ import {
   CATEGORIES, CATEGORY_LABEL, DOC_TYPES, SOURCE_KINDS,
   type CoverageSummary, type Question, type RequirementDocument, type RequirementItem, type RtmRow, type VersionDetail,
 } from '../lib/types';
-import { Alert, Badge, Button, Card, Field, PageHeader, Select, Table } from '../components/ui';
+import { Alert, Badge, Button, Card, Field, PageHeader, Select, Table, useShowMore } from '../components/ui';
 import { Tabs } from '../components/Tabs';
 import { AiBadge } from '../components/AiBadge';
 
@@ -125,7 +125,7 @@ function UploadForm() {
 
   return (
     <Card title="Upload requirement document">
-      <form onSubmit={submit} className="grid items-end gap-3 md:grid-cols-4">
+      <form onSubmit={submit} className="grid grid-cols-1 items-end gap-3 md:grid-cols-4">
         <div className="flex flex-col gap-1 md:col-span-2">
           <label htmlFor="req-file" className="text-sm font-medium">File <span aria-hidden="true" className="text-red-700">*</span></label>
           <input id="req-file" ref={fileRef} type="file" required aria-describedby="req-file-hint" className="text-sm"
@@ -223,6 +223,7 @@ function Items() {
   const params = new URLSearchParams({ take: String(take), ...(f.q && { q: f.q }), ...(f.category && { category: f.category }), ...(f.kind && { kind: f.kind }),
     ...(f.coverage && { coverage: f.coverage }), ...(f.ambiguous && { ambiguous: 'true' }), ...(f.changed && { changed: 'true' }) });
   const q = useQuery({ queryKey: ['items', current!.id, params.toString()], queryFn: () => api<{ total: number; items: RequirementItem[] }>(`/projects/${current!.id}/requirements/items?${params}`) });
+  const page = useShowMore(q.data?.items ?? []);
   const update = useMutation({
     mutationFn: ({ id, category }: { id: string; category: string }) => api(`/projects/${current!.id}/requirements/items/${id}`, { method: 'PATCH', json: { category } }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['items'] }); qc.invalidateQueries({ queryKey: ['coverage'] }); },
@@ -230,7 +231,7 @@ function Items() {
 
   return (
     <Card>
-      <form className="mb-4 grid gap-2 md:grid-cols-6" onSubmit={(e) => e.preventDefault()} aria-label="Filter requirement items">
+      <form className="mb-4 grid grid-cols-1 gap-2 md:grid-cols-6" onSubmit={(e) => e.preventDefault()} aria-label="Filter requirement items">
         <Field label="Search text or ID" value={f.q} onChange={(e) => setF({ ...f, q: e.target.value })} />
         <Select label="Category" value={f.category} onChange={(e) => setF({ ...f, category: e.target.value })}>
           <option value="">All</option>{CATEGORIES.map((c) => <option key={c} value={c}>{CATEGORY_LABEL[c]}</option>)}
@@ -247,7 +248,7 @@ function Items() {
       {update.error && <Alert>{update.error.message}</Alert>}
       <p className="mb-2 text-sm text-slate-600" role="status">{q.data ? `Showing ${q.data.items.length} of ${q.data.total} items` : 'Loading…'}</p>
       <Table head={['ID', 'Source', 'Location', 'Requirement text (verbatim)', 'Category', 'Flags', 'Coverage']} caption="Requirement items">
-        {q.data?.items.map((i) => (
+        {page.visible.map((i) => (
           <tr key={i.id} className={i.coverageStatus === 'Unmapped' ? 'bg-red-50/40' : undefined}>
             <td className="whitespace-nowrap px-2 py-2 font-mono text-xs">{i.reqId}</td>
             <td className="px-2 py-2 text-xs">{i.sourceKind}</td>
@@ -276,6 +277,7 @@ function Items() {
           </tr>
         ))}
       </Table>
+      {page.more}
       {q.data && q.data.items.length < q.data.total && <Button variant="secondary" className="mt-3" onClick={() => setTake(take + 500)}>Load more</Button>}
     </Card>
   );
