@@ -7,7 +7,7 @@
     "build": "nest build",
     "start": "node dist/main.js",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "jest --runInBand",
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest --runInBand",
     "prisma:generate": "prisma generate",
     "prisma:postgres": "node scripts/make-postgres-schema.mjs",
     "db:push": "prisma db push",

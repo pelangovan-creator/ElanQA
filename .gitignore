@@ -9,3 +9,4 @@ apps/api/prisma/schema.postgres.prisma
 playwright-report/
 test-results/
 .DS_Store
+test-storage/

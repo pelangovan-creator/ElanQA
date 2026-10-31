@@ -8,6 +8,8 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { ProjectsModule } from './projects/projects.module';
 import { AuditModule } from './audit/audit.module';
+import { AiModule } from './ai/ai.service';
+import { RequirementsModule } from './requirements/requirements.module';
 import { HealthController } from './health/health.controller';
 
 @Module({
@@ -20,6 +22,8 @@ import { HealthController } from './health/health.controller';
     UsersModule,
     ProjectsModule,
     AuditModule,
+    AiModule,
+    RequirementsModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
