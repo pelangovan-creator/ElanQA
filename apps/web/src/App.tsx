@@ -9,6 +9,9 @@ import { Users } from './pages/Users';
 import { Audit } from './pages/Audit';
 import { Requirements } from './pages/Requirements';
 import { TestArtefacts } from './pages/TestArtefacts';
+import { TestExecution } from './pages/TestExecution';
+import { RunView } from './pages/execution/RunView';
+import { ManualRun } from './pages/execution/ManualRun';
 
 export function App() {
   const { user, loading } = useAuth();
@@ -23,6 +26,9 @@ export function App() {
           <Route path="audit" element={<Audit />} />
           <Route path="requirements" element={<Requirements />} />
           <Route path="artefacts" element={<TestArtefacts />} />
+          <Route path="execution" element={<TestExecution />} />
+          <Route path="execution/runs/:runId" element={<RunView />} />
+          <Route path="execution/manual/:runId" element={<ManualRun />} />
           {user.role === 'Admin' && <Route path="users" element={<Users />} />}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

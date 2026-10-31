@@ -2,6 +2,8 @@ import { BadRequestException, ConflictException, Injectable, Logger, NotFoundExc
 import { ChildProcess, spawn } from 'node:child_process';
 import { copyFile, mkdir, stat, writeFile } from 'node:fs/promises';
 import { basename, dirname, extname, join } from 'node:path';
+import { readFile } from 'node:fs/promises';
+import JSZip from 'jszip';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
@@ -21,6 +23,35 @@ const ATTACHMENT_KIND: Record<string, string> = {
 };
 const STATUS: Record<string, string> = { passed: 'Pass', failed: 'Fail', timedOut: 'Fail', skipped: 'Skipped', interrupted: 'Blocked' };
 const MAX_LOG = 200_000;
+
+/** Every representation of a secret that can appear in logs, traces or form bodies. */
+export function secretVariants(secrets: string[]): string[] {
+  return [...new Set(secrets.filter((x) => x && x.length >= 3).flatMap((x) => [
+    x, encodeURIComponent(x), encodeURIComponent(x).replace(/%20/g, '+'), JSON.stringify(x).slice(1, -1),
+    new URLSearchParams({ v: x }).toString().slice(2), // HTML form encoding: "!" → "%21", " " → "+"
+    [...Buffer.from(x)].map((b) => `%${b.toString(16).toUpperCase().padStart(2, '0')}`).join(''), // fully percent-encoded
+  ]))].sort((a, b) => b.length - a.length);
+}
+export function redactText(text: string, variants: string[]): string {
+  let out = text;
+  for (const v of variants) out = out.split(v).join('********');
+  return out;
+}
+/** Rewrite every entry of a Playwright trace archive with secrets removed. */
+export async function redactZip(file: string, variants: string[]): Promise<void> {
+  if (!variants.length) return;
+  const zip = await JSZip.loadAsync(await readFile(file));
+  let changed = false;
+  for (const name of Object.keys(zip.files)) {
+    const entry = zip.files[name];
+    if (entry.dir) continue;
+    const buf = await entry.async('nodebuffer');
+    const text = buf.toString('latin1');
+    const red = redactText(text, variants);
+    if (red !== text) { zip.file(name, Buffer.from(red, 'latin1')); changed = true; }
+  }
+  if (changed) await writeFile(file, await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' }));
+}
 
 interface ReporterEvent {
   type: string; title?: string; project?: string; status?: string; retry?: number; willRetry?: boolean; duration?: number; error?: string; errorStack?: string;
@@ -103,6 +134,8 @@ export class RunsService implements OnModuleDestroy {
 
     const creds = await this.envs.credentialsFor(projectId, env.id);
     const credsByRole = Object.fromEntries(Object.entries(creds).map(([r, c]) => [r, c]));
+    // Typed passwords show up in Playwright step titles, logs and traces - redact them before anything is stored.
+    const secrets = secretVariants(Object.values(creds).map((c) => c.password));
     const pwPkg = dirname(require.resolve('@playwright/test/package.json'));
     // Allowlisted environment: the API's own secrets (DB URL, JWT, encryption key, AI key) never reach test code.
     const childEnv: NodeJS.ProcessEnv = {
@@ -119,7 +152,7 @@ export class RunsService implements OnModuleDestroy {
     const tcMap = new Map((await this.prisma.testCase.findMany({ where: { projectId, tcId: { in: tcIds } }, select: { id: true, tcId: true } })).map((t) => [t.tcId, t.id]));
     let log = `▶ ${run.runId} on ${env.name} (${env.baseUrl}) · browsers: ${browsers.join(', ')} · ${tcIds.length} test cases\n`;
     let dirty = true;
-    const append = (line: string) => { log = (log + line + '\n').slice(-MAX_LOG); dirty = true; };
+    const append = (line: string) => { log = (log + redactText(line, secrets) + '\n').slice(-MAX_LOG); dirty = true; };
     await this.prisma.testRun.update({ where: { id: run.id }, data: { status: 'Running', startedAt: new Date(), log } });
 
     const child = spawn(process.execPath, args, { cwd: workspace, env: childEnv, stdio: ['ignore', 'pipe', 'pipe'] });
@@ -136,7 +169,7 @@ export class RunsService implements OnModuleDestroy {
         if (at < 0) { if (line.trim()) append(line); continue; }
         let ev: ReporterEvent;
         try { ev = JSON.parse(line.slice(at + 11)); } catch { continue; }
-        queue = queue.then(() => this.onEvent(projectId, run.id, dir, ev, tcMap, user, append)).catch((e) => append(`! ${(e as Error).message}`));
+        queue = queue.then(() => this.onEvent(projectId, run.id, dir, ev, tcMap, user, append, secrets)).catch((e) => append(`! ${(e as Error).message}`));
       }
     });
     child.stderr.on('data', (chunk: Buffer) => chunk.toString().split('\n').filter((l) => l.trim()).forEach((l) => append(l)));
@@ -152,7 +185,10 @@ export class RunsService implements OnModuleDestroy {
     await this.rollUpTestCases(projectId, run.id, user);
   }
 
-  private async onEvent(projectId: string, runId: string, dir: string, ev: ReporterEvent, tcMap: Map<string, string>, user: AuthUser, append: (l: string) => void) {
+  private async onEvent(projectId: string, runId: string, dir: string, rawEv: ReporterEvent, tcMap: Map<string, string>, user: AuthUser, append: (l: string) => void, secrets: string[]) {
+    // Redact secrets in everything textual the reporter sent (titles, errors, steps, annotations, inline bodies are handled below).
+    const ev = JSON.parse(redactText(JSON.stringify({ ...rawEv, attachments: undefined }), secrets.map((x) => JSON.stringify(x).slice(1, -1)))) as ReporterEvent;
+    ev.attachments = rawEv.attachments;
     if (ev.type === 'begin') { append(`${ev.total} tests (test cases × browsers) scheduled`); return; }
     if (ev.type === 'error') { append(`ERROR ${ev.message}`); return; }
     if (ev.type === 'testBegin') { append(`… ${ev.title} [${ev.project}]${ev.retry ? ` (retry ${ev.retry})` : ''}`); return; }
@@ -178,6 +214,8 @@ export class RunsService implements OnModuleDestroy {
       const target = join(dir, 'evidence', result.id, `${a.name}${a.path ? extname(a.path) : a.contentType.includes('json') ? '.json' : '.bin'}`);
       await mkdir(dirname(target), { recursive: true });
       if (a.path) await copyFile(a.path, target); else if (a.body) await writeFile(target, Buffer.from(a.body, 'base64')); else continue;
+      if (kind === 'Trace') await redactZip(target, secrets).catch((e) => append(`! trace redaction failed: ${(e as Error).message}`));
+      else if (/json|text/.test(a.contentType)) await writeFile(target, redactText(await readFile(target, 'utf8'), secrets));
       const size = (await stat(target)).size;
       const rel = target.slice(this.storage.root.length + 1);
       await this.prisma.attachment.create({ data: { testResultId: result.id, kind, fileName: basename(target), mimeType: a.contentType, storagePath: rel, sizeBytes: size } });

@@ -7,6 +7,7 @@ import { AppModule } from '../src/app.module';
 import { configureApp } from '../src/bootstrap';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { hashPassword } from '../src/auth/password';
+import JSZip from 'jszip';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { app: demoApp } = require('../../demo/server.js');
@@ -128,6 +129,32 @@ describe('Phase 4 - environments, Playwright scripts, runs with evidence, manual
     expect(done.results.map((r: any) => r.status)).toEqual(['Pass']);
   }, 120_000);
 
+  it('test-account passwords never appear in stored results, logs or traces', async () => {
+    const tc = (await api().get(`${A()}/test-cases?q=log in with email`).set(as('tester'))).body.find((t: any) => t.technique === 'UseCase');
+    const script = (await api().get(`${X()}/scripts/${tc.automatedScriptId}`).set(as('tester'))).body;
+    // Force a failure AFTER a successful login so the trace (which recorded the typed password and form body) is kept.
+    const content = script.content.replace(/\n\}\);\n$/, `\n  expect('forced failure for the redaction test').toBe('');\n});\n`);
+    await api().patch(`${X()}/scripts/${script.id}`).set(as('tester')).send({ content }).expect(200);
+    const run = (await api().post(`${X()}/runs`).set(as('tester')).send({ environmentId: envId, mode: 'Selected', testCaseIds: [tc.id] }).expect(201)).body;
+    const done = await waitForRun(run.id);
+    expect(done.failed).toBe(1);
+    expect(JSON.stringify(done)).not.toContain('Demo!2345');
+    expect(JSON.stringify(done)).toContain('********');
+    const trace = done.results[0].attachments.find((a: any) => a.kind === 'Trace');
+    const zipBuf = (await api().get(`${X()}/attachments/${trace.id}`).set(as('tester')).buffer(true).parse(binary).expect(200)).body;
+    const zip = await JSZip.loadAsync(zipBuf);
+    for (const name of Object.keys(zip.files)) {
+      if (zip.files[name].dir) continue;
+      const text = (await zip.files[name].async('nodebuffer')).toString('latin1');
+      expect({ name, leaked: text.includes('Demo!2345') || text.includes('Demo%212345') }).toEqual({ name, leaked: false });
+    }
+    for (const kind of ['ConsoleLog', 'NetworkLog']) {
+      const a = done.results[0].attachments.find((x: any) => x.kind === kind);
+      const body = (await api().get(`${X()}/attachments/${a.id}`).set(as('tester')).buffer(true).parse(binary)).body.toString();
+      expect(body).not.toContain('Demo!2345');
+    }
+  }, 120_000);
+
   it('manual execution: step results, failing step drives the status, screenshot upload, completion', async () => {
     const tc = (await api().get(`${A()}/test-cases`).set(as('tester'))).body.find((t: any) => !t.automationCandidate);
     const run = (await api().post(`${X()}/manual-runs`).set(as('tester')).send({ testCaseIds: [tc.id], environmentId: envId, build: '1.0.0' }).expect(201)).body;
@@ -148,7 +175,7 @@ describe('Phase 4 - environments, Playwright scripts, runs with evidence, manual
 
   it('run history lists runs newest first', async () => {
     const runs = (await api().get(`${X()}/runs`).set(as('client')).expect(200)).body;
-    expect(runs.length).toBe(4);
+    expect(runs.length).toBe(5);
     expect(runs[0].kind).toBe('Manual');
   });
 });

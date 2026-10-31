@@ -82,10 +82,36 @@ export interface TestCase extends Reviewable {
   tcId: string; scenario?: { id: string; scenarioId: string } | null; module: string; title: string; description?: string | null; preconditions?: string | null;
   testDataRef?: string | null; steps: Step[]; status: string; priority: string; severityIfFailed?: string | null; testType: string; technique: string;
   automationCandidate: boolean; suites: string[]; comments?: string | null; needsRegeneration: boolean; requirements: { id: string; reqId: string; text?: string }[];
-  defectIds: string[]; actualResult?: string | null; executedBy?: string | null; executionDate?: string | null;
+  defectIds: string[]; actualResult?: string | null; executedBy?: string | null; executionDate?: string | null; automatedScriptId?: string | null;
 }
 export interface TestData extends Reviewable {
   dataId: string; tcIds: string[]; fieldName: string; dataType: string; validValues: string[]; invalidValues: string[];
   boundaryValues: Record<string, string> | null; specialChars?: string | null; emptyNull?: string | null; expectedBehaviour?: string | null; environment?: string | null; notes?: string | null;
 }
 export interface DocArtefact extends Reviewable { type: string; title: string; version: number; updatedAt: string; content: { sections: { key: string; heading: string; body: string }[] } }
+
+export const RUN_MODES = ['All', 'Selected', 'Module', 'Priority', 'Smoke', 'Sanity', 'Regression', 'RerunFailed'] as const;
+export const RUN_MODE_LABEL: Record<string, string> = {
+  All: 'Run all', Selected: 'Run selected', Module: 'Run by module', Priority: 'Run by priority', Smoke: 'Run smoke suite', Sanity: 'Run sanity suite', Regression: 'Run regression suite', RerunFailed: 'Re-run failed',
+};
+export const BROWSERS = ['chromium', 'firefox', 'webkit'] as const;
+export interface Environment {
+  id: string; name: string; envType: string; baseUrl: string; browsers: string[]; viewport?: string | null; modulePaths: Record<string, string>;
+  workers: number; retries: number; timeoutMs: number; credentials: Record<string, { username: string; password: string }>;
+  lastProbe: { at: string; pages: Record<string, { path: string; status: number | null; labels: string[]; error?: string }> } | null;
+}
+export interface ScriptSummary { id: string; testCaseId?: string | null; name: string; path: string; kind: string; aiGenerated: boolean; updatedAt: string }
+export interface AttachmentMeta { id: string; kind: string; fileName: string; mimeType: string; sizeBytes: number }
+export interface RunResult {
+  id: string; testCaseId: string; status: string; title?: string | null; browser?: string | null; durationMs?: number | null; retries: number; error?: string | null;
+  stepResults: { title?: string; no?: number; status?: string; actual?: string; error?: string; duration?: number }[]; executedBy?: string | null; createdAt: string;
+  testCase: { tcId: string; title: string; module: string; priority: string; steps: Step[] }; attachments: AttachmentMeta[];
+}
+export interface RunSummary {
+  id: string; runId: string; kind: string; mode: string; build?: string | null; status: string; total: number; passed: number; failed: number; blocked: number; skipped: number;
+  startedAt?: string | null; finishedAt?: string | null; createdAt: string; environment?: { name: string; envType: string } | null;
+}
+export interface RunDetail extends RunSummary {
+  log?: string | null; executedBy?: string | null; environment?: { name: string; envType: string; baseUrl?: string } | null;
+  summary: { browsers?: string[]; notAutomated?: string[]; testCases?: string[]; testCaseIds?: string[]; environment?: string; baseUrl?: string } | null; results: RunResult[];
+}

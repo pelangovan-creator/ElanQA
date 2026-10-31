@@ -16,7 +16,7 @@ const NAV: { to: string; label: string; phase: number }[] = [
   { to: '/closure', label: 'Test Closure', phase: 9 },
   { to: '/audit', label: 'Audit Trail', phase: 1 },
 ];
-const CURRENT_PHASE = 3;
+const CURRENT_PHASE = 4;
 
 export function Layout() {
   const { user, logout } = useAuth();
@@ -40,7 +40,7 @@ export function Layout() {
         </div>
         <nav aria-label="Main" className="flex flex-row flex-wrap gap-1 px-2 pb-3 md:flex-col">
           {NAV.map((n) => n.phase <= CURRENT_PHASE ? (
-            <NavLink key={n.to} to={n.to} end className={({ isActive }) => `rounded px-3 py-2 text-sm ${isActive ? 'bg-white/20 font-semibold' : 'hover:bg-white/10'}`}>{n.label}</NavLink>
+            <NavLink key={n.to} to={n.to} end={n.to === '/'} className={({ isActive }) => `rounded px-3 py-2 text-sm ${isActive ? 'bg-white/20 font-semibold' : 'hover:bg-white/10'}`}>{n.label}</NavLink>
           ) : (
             <span key={n.to} aria-disabled="true" className="flex items-center justify-between rounded px-3 py-2 text-sm text-brand-100/80">
               {n.label}<span className="text-[10px] uppercase">Soon</span>

@@ -17,7 +17,7 @@ QA Pilot is an end-to-end QA management and test automation platform. It takes a
 | 1 | Setup, auth, roles, multi-project, DB schema, audit trail, encryption | ✅ Done |
 | 2 | Requirement upload/parsing, zero-miss extraction, coverage, RTM | ✅ Done |
 | 3 | Clarifications, scenarios, test cases, techniques, test plan, test data + review workflow + exports | ✅ Done |
-| 4 | Playwright script generation, Run Test Cases, execution screens | ⏳ Next |
+| 4 | Playwright script generation, Run Test Cases, execution screens + demo app | ✅ Done |
 | 5 | Auto-defects with screenshots/attachments, defect management | |
 | 6 | Jira guide + Jira REST integration | |
 | 7 | Morning/evening defect monitoring + notifications | |
@@ -35,6 +35,7 @@ cp .env.example apps/api/.env
 # Edit apps/api/.env and set JWT_SECRET and ENCRYPTION_KEY, e.g. `openssl rand -hex 32` for each
 npm run db:setup          # creates apps/api/prisma/dev.db and seeds users + DEMO project
 npm run dev               # API on :4000, web on :5173 (Vite proxies /api)
+npm run dev:demo          # optional: ShopEasy demo app on :4600 to run tests against
 ```
 
 Open http://localhost:5173.
@@ -143,6 +144,47 @@ All artefacts are on the **Test Artefacts** screen. Every one can be edited and 
   The Excel export has `TestData` and `Accounts` sheets for data-driven automation.
 - **Test Plan (IEEE 829 / ISO 29119):** 23 sections filled in from project data: scope and out-of-scope items, modules, test types and techniques used, the RACI from the project team, entry/exit/suspension criteria, the defect life cycle with severity/priority/SLA definitions, risks from ambiguous items and open questions, and assumptions. Each section can be edited, and regenerating creates a new version.
 - **Test Techniques Document:** explains every black-box, experience-based and white-box technique and every test type, and lists the test cases that use each one.
+
+## Test execution (Phase 4)
+
+### Demo application
+`apps/demo` contains **ShopEasy Demo**, a small Express application with Login, Registration and Checkout pages. It implements [`apps/demo/docs/demo-srs.md`](apps/demo/docs/demo-srs.md) and has three **deliberate, documented bugs**:
+
+| Bug | Requirement | Behaviour |
+|---|---|---|
+| BUG-1 | Lock the account after 3 failed attempts | Locks after 4 |
+| BUG-2 | Password 8–16 characters | Accepts more than 16 |
+| BUG-3 | Discount for orders *above* Rs. 5000 | Applies at exactly 5000 |
+
+Set `DEMO_BUGS=0` to fix them. Session state is per browser context, so tests are isolated. The test account is `qapilot.tester@example.com` / `Demo!2345` (change it with `DEMO_TESTER_PASSWORD`).
+
+**Try it end to end:**
+1. `npm run dev:demo`
+2. Create a project and upload `apps/demo/docs/demo-srs.md`. In **Test Artefacts**, generate and approve the test cases.
+3. In **Test Execution → Environments**, add `http://localhost:4600` with a *Tester* account.
+4. Click **Generate / update scripts**, then **▶ Run Test Cases**.
+
+The run finds the three bugs through five failing test cases (state transition, equivalence partitioning, BVA, BVA, equivalence partitioning). Each failure comes with evidence.
+
+### How it works
+- **Environments:** application URL, type (QA/UAT/Staging…), browsers, viewport, module → path map, parallel workers, retries and timeout.
+  - Test-account credentials are AES-256-GCM encrypted. You can write them but not read them back: responses show them masked.
+- **Script generation:** turns approved automation-candidate test cases into a Playwright project. You can opt in to also include test cases still pending review.
+  - First, the environment's pages are opened in a real browser to find the field labels (the "probe").
+  - The project contains `playwright.config.ts`, a base Page Object, one Page Object per module, the Test Data Sheet as JSON (data-driven tests), an evidence fixture, a live-progress reporter, and one spec per test case.
+  - Templates implement the test case's technique: equivalence partitioning and boundary values on the field, rule thresholds, state transitions (lockout), login, error guessing (empty form, script injection), UI/accessibility checks and responsive checks.
+  - Anything that can't be automated generically becomes `test.fixme`, which is reported as **Skipped**, never as a false pass. With `ANTHROPIC_API_KEY` set, Claude writes those scripts using the probed page labels.
+  - Scripts can be viewed and edited in the UI. Edited scripts are run exactly as saved and are never overwritten by regeneration.
+- **Running:** choose Run all, Run selected, Run by module, Run by priority, Run smoke/sanity/regression suite, or Re-run failed. One run per project at a time.
+  - Progress, the log and per-test results update live, and a run can be aborted.
+  - The test case status is the worst result across all browsers.
+- **Evidence on every failure:** screenshot at the point of failure, full-page screenshot, an annotated screenshot highlighting the element under test (or the outcome message), video, Playwright trace, console log and network log.
+- **Manual execution:** a guided screen to mark each step Pass/Fail/Blocked/Skipped, record actual results and attach screenshots. It updates the test case and the run history.
+
+### Security notes for execution
+- Playwright runs as a child process with an **allowlisted environment**, so the API's own `DATABASE_URL`, `JWT_SECRET`, `ENCRYPTION_KEY` and `ANTHROPIC_API_KEY` never reach test code. Test credentials are passed in through `QAPILOT_CREDENTIALS` and are never written to disk.
+- Typed passwords are **redacted** before anything is stored: step titles, errors, run logs, console/network logs, and every file inside the trace archive, including form bodies in plain, URL-encoded and form-encoded variants. Screenshots and video show password fields masked.
+- **Running scripts executes code on the server.** Anyone with the `execution.run` permission (Admin, QA Lead, Tester) can edit and run scripts. In production, run QA Pilot in an isolated container (see Docker) with only the network access the application under test needs.
 
 ## Security and compliance features (Phase 1)
 
