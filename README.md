@@ -22,7 +22,7 @@ QA Pilot is an end-to-end QA management and test automation platform. It takes a
 | 6 | Jira: manual step-by-step guide with illustrated screens (no Jira connection, by decision) | ✅ Done |
 | 7 | Morning/evening defect monitoring (in-app delivery) | ✅ Done |
 | 8 | DSR, WSR, Defect Report, Dashboard | ✅ Done |
-| 9 | Test Closure Report with risk highlighting | ⏳ Next |
+| 9 | Test Closure Report with risk highlighting | ✅ Done |
 | 10 | Hardening, tests, Docker | |
 
 ## Run locally (SQLite)
@@ -254,6 +254,29 @@ Also available with one click:
 - **Editing:** reports are **editable while in Draft** (header, narrative and inputs). **Refresh data** re-pulls the numbers but keeps your edits. Status moves Draft → Final → Sent; a Final report can go back to Draft, and a Sent report is locked.
 - **Exports:** **PDF, Excel and Word** (charts embedded as images, high-impact rows in red), plus an **e-mail draft (.eml)** containing an HTML summary with the PDF attached. You open it in your own mail program, add recipients and send. QA Pilot sends nothing itself.
 - **Charts:** dependency-free SVG, shown inline with a tooltip on every mark and a text "Data" view for screen readers. Colours were checked with a palette validator: blue/orange for two series, one blue ramp for ordered categories, fixed status colours for pass/fail/blocked, always with labels.
+
+## Test closure (Phase 9)
+
+- **Triggers:** the **Test Closure** page checks the conditions live:
+  - **(a) all defects closed**;
+  - **(b) all Blocker, Critical and P1 defects closed**;
+  - **(c) closure requested by the client.** The QA Lead can always choose this, but must give a reason.
+  For (a) and (b), unreviewed draft defects, *Deferred* and *Verified-but-not-closed* defects count as open.
+- **Open-defect risk assessment:** every defect still open (drafts included) gets a row with business impact, likelihood, a **risk level** from the impact × likelihood matrix, workaround, mitigation/recommendation and owner. Rows are pre-filled from severity, priority and assignee, and editable. The report and every export lead with a prominent banner: *N defect(s) remain OPEN – M High risk*. High risks are red, Medium amber.
+- **Recommendation:** QA Pilot suggests **Go / Conditional Go / No-Go** with a reason and conditions.
+  - *No-Go:* an open Blocker, or a High risk without a workaround.
+  - *Conditional Go:* open risks remain or exit criteria are unmet.
+  - *Go:* everything is met.
+  You can change the decision, but **Go is refused while a High risk is open**, and the original suggestion is always shown alongside your choice.
+- **Report contents:** every field in section 9:
+  - document control; objectives and scope (taken from the Test Plan);
+  - test summary (planned/executed/passed/failed/blocked/not run) with charts;
+  - coverage and the final RTM; test types and techniques; environments;
+  - defect summary (severity, priority, status, module, reopen and rejection rates, density);
+  - deviations; the **exit criteria check** (each criterion evaluated against the data as met or not met, with comments);
+  - lessons learned, best practices, recommendations, known issues; deliverables; sign-off.
+- **Workflow:** Draft (editable; refresh keeps edits) → **Final** (requires a workaround and owner for every open defect) → **sign-off** by QA Lead, Project Manager and Client. A Client user signs their own section under their own name; the QA Lead records the others. When all three have signed, the report is **Signed Off** and the project is marked **Closed**, unless someone rejected.
+- **Exports:** PDF, Word and Excel (risk, exit criteria and sign-off sheets), plus an e-mail draft (.eml) whose subject carries the decision.
 
 ## Security and compliance features (Phase 1)
 

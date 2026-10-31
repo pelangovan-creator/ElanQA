@@ -31,7 +31,7 @@ export function Overview() {
             <li key={t} className="rounded-md border border-slate-200 p-3">
               <p className="text-sm font-semibold">{i + 1}. {t}</p>
               <p className="text-xs text-slate-600">{d}</p>
-              <p className="mt-2">{phase <= 7 ? <Link to={({ 2: "/requirements", 3: "/artefacts", 4: "/execution", 5: "/defects", 7: "/monitoring" } as Record<number, string>)[phase]} className="text-sm text-brand-700 underline">Open</Link> : <Badge color="gray">Arrives in phase {phase}</Badge>}</p>
+              <p className="mt-2">{phase <= 9 ? <Link to={({ 2: "/requirements", 3: "/artefacts", 4: "/execution", 5: "/defects", 7: "/reports", 9: "/closure" } as Record<number, string>)[phase]} className="text-sm text-brand-700 underline">Open</Link> : <Badge color="gray">Arrives in phase {phase}</Badge>}</p>
             </li>
           ))}
         </ol>
