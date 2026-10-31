@@ -282,6 +282,7 @@ model TestCase {
   testType            String // Smoke | Functional | API | Security ...
   technique           String // EquivalencePartitioning | BVA | DecisionTable ...
   automationCandidate Boolean  @default(false)
+  suites              String? // JSON array: Smoke | Sanity | Regression
   automatedScriptId   String?
   actualResult        String?
   executedBy          String?

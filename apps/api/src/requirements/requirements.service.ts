@@ -370,7 +370,7 @@ export class RequirementsService {
       orderBy: { sequence: 'asc' }, take: 500,
       select: { id: true, reqId: true, text: true, category: true, sourceKind: true, section: true, page: true },
     });
-    const suggestions = await this.prisma.requirementItem.count({ where: { projectId, isCurrent: true, coverageStatus: 'Unmapped', category: { in: ['Informational', 'OutOfScope'] } } });
+    const suggestions = await this.prisma.requirementItem.count({ where: { projectId, isCurrent: true, coverageStatus: 'Unmapped', category: { in: ['Informational', 'OutOfScope', 'Assumption'] } } });
     return {
       total, covered, informational, acknowledged, unmapped,
       coveragePercent: total ? Math.round(((total - unmapped) / total) * 1000) / 10 : 0,
@@ -406,16 +406,21 @@ export class RequirementsService {
   /** Accept the classifier's suggestion for every unmapped Informational / Out-of-scope item. */
   async acceptSuggestions(projectId: string, user: AuthUser) {
     const items = await this.prisma.requirementItem.findMany({
-      where: { projectId, isCurrent: true, coverageStatus: 'Unmapped', category: { in: ['Informational', 'OutOfScope'] } },
+      where: { projectId, isCurrent: true, coverageStatus: 'Unmapped', category: { in: ['Informational', 'OutOfScope', 'Assumption'] } },
       select: { id: true, category: true },
     });
     const now = new Date();
-    for (const cat of ['Informational', 'OutOfScope']) {
+    const reason: Record<string, string> = {
+      Informational: 'Informational statement - no test needed (accepted classification)',
+      OutOfScope: 'Out of scope - no test needed (accepted classification)',
+      Assumption: 'Assumption - recorded in the Test Plan, no direct test (accepted classification)',
+    };
+    for (const cat of Object.keys(reason)) {
       const ids = items.filter((i) => i.category === cat).map((i) => i.id);
       if (!ids.length) continue;
       await this.prisma.requirementItem.updateMany({
         where: { id: { in: ids } },
-        data: { coverageStatus: 'Informational', noTestReason: cat === 'OutOfScope' ? 'Out of scope - no test needed (accepted classification)' : 'Informational statement - no test needed (accepted classification)', acknowledgedById: user.id, acknowledgedAt: now },
+        data: { coverageStatus: 'Informational', noTestReason: reason[cat], acknowledgedById: user.id, acknowledgedAt: now },
       });
     }
     await this.audit.log({ userId: user.id, projectId, action: 'BULK_UPDATE', entityType: 'RequirementCoverage', after: { acceptedSuggestions: items.length } });

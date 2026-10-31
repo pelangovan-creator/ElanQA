@@ -19,3 +19,18 @@ export const DEFECT_STATUSES = [
   'New', 'Open', 'Assigned', 'InProgress', 'Fixed', 'ReadyForRetest', 'Retest', 'Reopened',
   'Verified', 'Closed', 'Deferred', 'Rejected', 'Duplicate', 'NotABug',
 ] as const;
+
+export const SCENARIO_TYPES = ['Positive', 'Negative', 'Edge', 'EndToEnd'] as const;
+export const PRIORITY_LEVELS = ['High', 'Medium', 'Low'] as const;
+export const SUITES = ['Smoke', 'Sanity', 'Regression'] as const;
+
+/** Test design techniques (ISTQB) used to tag every test case. */
+export const TECHNIQUES = [
+  'EquivalencePartitioning', 'BoundaryValueAnalysis', 'DecisionTable', 'StateTransition', 'UseCase', 'CauseEffectGraphing',
+  'Pairwise', 'ClassificationTree', 'ErrorGuessing', 'Exploratory', 'ChecklistBased', 'StatementCoverage', 'BranchCoverage', 'PathCoverage',
+] as const;
+
+export const TEST_TYPES = [
+  'Smoke', 'Sanity', 'Functional', 'Integration', 'System', 'EndToEnd', 'Regression', 'Retest', 'UAT', 'API', 'Database', 'UI', 'Usability',
+  'Accessibility', 'Compatibility', 'Responsive', 'Performance', 'Load', 'Stress', 'Security', 'Localization', 'DataMigration', 'Negative', 'CRUD',
+] as const;
