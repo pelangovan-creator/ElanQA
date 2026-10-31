@@ -71,8 +71,8 @@ export async function renderPdf(doc: ExportDoc): Promise<Buffer> {
 }
 
 /** Render a self-contained HTML page to a PNG (no network, no JavaScript). */
-export async function renderPng(html: string, width = 1200, height = 750): Promise<Buffer> {
-  const ctx = await (await browser()).newContext({ javaScriptEnabled: false, viewport: { width, height }, deviceScaleFactor: 1 });
+export async function renderPng(html: string, width = 1200, height = 750, scale = 1): Promise<Buffer> {
+  const ctx = await (await browser()).newContext({ javaScriptEnabled: false, viewport: { width, height }, deviceScaleFactor: scale });
   try {
     await ctx.route('**/*', (r) => r.abort());
     const page = await ctx.newPage();

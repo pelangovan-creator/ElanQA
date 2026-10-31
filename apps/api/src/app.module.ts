@@ -14,6 +14,7 @@ import { ArtefactsModule } from './artefacts/artefacts.module';
 import { ExecutionModule } from './execution/execution.module';
 import { DefectsModule } from './defects/defects.module';
 import { MonitoringModule } from './monitoring/monitoring.module';
+import { ReportsModule } from './reports/reports.module';
 import { HealthController } from './health/health.controller';
 
 @Module({
@@ -32,6 +33,7 @@ import { HealthController } from './health/health.controller';
     ExecutionModule,
     DefectsModule,
     MonitoringModule,
+    ReportsModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
