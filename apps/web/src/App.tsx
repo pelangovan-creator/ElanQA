@@ -7,6 +7,7 @@ import { Overview } from './pages/Overview';
 import { Projects } from './pages/Projects';
 import { Users } from './pages/Users';
 import { Audit } from './pages/Audit';
+import { Requirements } from './pages/Requirements';
 
 export function App() {
   const { user, loading } = useAuth();
@@ -19,6 +20,7 @@ export function App() {
           <Route index element={<Overview />} />
           <Route path="projects" element={<Projects />} />
           <Route path="audit" element={<Audit />} />
+          <Route path="requirements" element={<Requirements />} />
           {user.role === 'Admin' && <Route path="users" element={<Users />} />}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

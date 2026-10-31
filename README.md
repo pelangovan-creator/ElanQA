@@ -15,8 +15,8 @@ QA Pilot is an end-to-end QA management and test automation platform. It takes a
 | Phase | Scope | Status |
 |---|---|---|
 | 1 | Setup, auth, roles, multi-project, DB schema, audit trail, encryption | ✅ Done |
-| 2 | Requirement upload/parsing, zero-miss extraction, coverage, RTM | ⏳ Next |
-| 3 | Clarifications, scenarios, test cases, techniques, test plan, test data + review workflow + exports | |
+| 2 | Requirement upload/parsing, zero-miss extraction, coverage, RTM | ✅ Done |
+| 3 | Clarifications, scenarios, test cases, techniques, test plan, test data + review workflow + exports | ⏳ Next |
 | 4 | Playwright script generation, Run Test Cases, execution screens | |
 | 5 | Auto-defects with screenshots/attachments, defect management | |
 | 6 | Jira guide + Jira REST integration | |
@@ -65,7 +65,13 @@ npm test                  # API unit + integration (Jest + Supertest) and web (V
 npm run typecheck
 ```
 
-API integration tests run against a throwaway SQLite DB (`apps/api/prisma/test.db`) that is recreated on every run.
+API integration tests run against a throwaway SQLite DB (`apps/api/prisma/test.db`) and storage folder (`apps/api/test-storage`) that are recreated on every run. The API test script sets `NODE_OPTIONS=--experimental-vm-modules`, which the PDF library needs under Jest.
+
+The sample requirement documents in `apps/api/test/fixtures` are synthetic and are produced by `python3 apps/api/scripts/make-fixtures.py`. To see how any file is split, run:
+
+```bash
+cd apps/api && npx ts-node --transpile-only -P tsconfig.json scripts/try-parse.ts srs-v1.docx
+```
 
 ## Environment variables
 
@@ -78,7 +84,8 @@ See [`.env.example`](.env.example). Nothing secret is hard-coded, and the API re
 | `ENCRYPTION_KEY` | AES-256-GCM key for credentials, API tokens and webhooks stored in the DB |
 | `CORS_ORIGIN` | Allowed web origins |
 | `STORAGE_DIR` | Uploaded documents, screenshots, videos, traces |
-| `ANTHROPIC_API_KEY`, `CLAUDE_MODEL` | Optional AI layer |
+| `ANTHROPIC_API_KEY`, `CLAUDE_MODEL` | Optional AI layer (default model `claude-opus-5-5`) |
+| `OCR_LANG`, `OCR_LANG_PATH` | OCR language (default `eng`, bundled) |
 | `MONITOR_*` | Morning/evening defect check schedule (default 09:30 and 18:00 Asia/Kolkata) |
 
 ## Roles and permissions
@@ -93,6 +100,25 @@ Each user has a global role. A per-project membership role overrides it inside t
 | Edit requirements/artefacts, run tests, create defects | ✔ | ✔ | ✔ | | |
 | Update defects | ✔ | ✔ | ✔ | ✔ | |
 | View | ✔ | ✔ | ✔ | ✔ | ✔ |
+
+## Requirement analysis (Phase 2)
+
+1. **Upload:** PDF, DOCX, XLSX, CSV, TXT, EML, Markdown and images, up to 25 MB. The original file is stored unchanged, with its SHA-256 hash, and can be downloaded again.
+2. **Parsing:**
+   - PDF is read page by page, so page numbers are kept. A page with no text layer is rendered and read with OCR.
+   - DOCX keeps headings, nested lists, tables, footnotes and endnotes.
+   - In spreadsheets, every sheet, row and cell is read.
+   - Images are read with OCR. OCR uses tesseract.js with the English language data bundled as an npm package, so it works offline. Set `OCR_LANG` and `OCR_LANG_PATH` for other languages.
+3. **Splitting into items:** every sentence, bullet, table row, table cell, header, footnote, note, caption and appendix item becomes an item with a hierarchical ID (`REQ-001.03`, cells `REQ-010.02.03`) and keeps its section and page.
+4. **Classification:** a deterministic rule set always runs. When `ANTHROPIC_API_KEY` is set, Claude reclassifies the items in batches using schema-validated structured output, with server-side refusal fallback enabled. The AI never adds or removes items; splitting is deterministic. If the AI call fails, the rule-based result is kept.
+5. **Ambiguity:** vague words (should, may, fast, user-friendly, etc., approximately, as needed, TBD …) each become a clarification question (`Q-001`).
+6. **Reverse check:** the document is rebuilt from the extracted items and compared word for word with an independently extracted copy of the original text. The UI shows both word counts and any missing words.
+7. **New versions:** the app shows the differences from the previous version (added, modified, removed).
+   - Unchanged and modified items keep their requirement ID.
+   - Links to scenarios and test cases, and "no test needed" decisions, carry over to the new version.
+   - Test cases linked to modified or removed items are flagged for regeneration.
+8. **Coverage:** an item counts as covered when a scenario or test case is linked to it. Otherwise it needs a reason-backed "Informational – no test needed" mark, or a QA Lead acknowledgement. The phase is complete only when no item is unmapped.
+9. **RTM:** Requirement → Scenarios → Test cases → Execution status → Defects, always up to date, with Excel and CSV export.
 
 ## Security and compliance features (Phase 1)
 

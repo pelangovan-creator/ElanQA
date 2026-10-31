@@ -3,7 +3,7 @@ export const NFR_RULES: [string, RegExp][] = [
   ['security', /\b(encrypt\w*|2fa|mfa|multi-factor|session time-?out|owasp|captcha|ssl|tls|https|xss|sql injection|csrf|brute[- ]force|access control|role-based access|pii|gdpr|masked|hash(ed|ing)?|secure(ly)?|security|vulnerabilit\w*|penetration)\b/i],
   ['accessibility', /\b(wcag|accessib\w*|screen reader|keyboard(-only)? navigation|aria|contrast|alt text|assistive)\b/i],
   ['compatibility', /\b(browser|chrome|firefox|safari|edge|ios|android|mobile|tablet|desktop|device|responsive|resolution|operating system|windows|macos)\b/i],
-  ['localization', /\b(locali[sz]\w*|language|translation|multi-?lingual|currency|time ?zone|date format|i18n|l10n|rtl|hindi|arabic)\b/i],
+  ['localization', /\b(locali[sz]\w*|language|translation|multi-?lingual|currency|inr|usd|eur|time ?zone|date format|i18n|l10n|rtl|hindi|arabic)\b/i],
   ['usability', /\b(user[- ]friendly|intuitive|easy to use|ease of use|usability|consistent look|clutter|learnab\w*)\b/i],
   ['reliability', /\b(uptime|availability|99\.\d+%|backup|recover\w*|failover|disaster|retry|fault toleran\w*|downtime)\b/i],
 ];
@@ -14,7 +14,7 @@ const RULES: [string, RegExp][] = [
   ['Constraint', /\b(constraint|must comply|complian\w*|regulat\w*|limited to|restricted to|only (be )?available (on|in)|deadline|budget|must use|technology stack|licen[cs]e)\b/i],
   ['Validation', /(\b\d+\s*(?:-|–|to)\s*\d+\b)|\b(mandatory|required field|is required|must be (a )?valid|invalid|valid (email|phone|format|date)|format|characters?|digits?|alphanumeric|numeric|min(imum)?|max(imum)?|length|between \d+ and \d+|at least \d+|no more than|error message|validation|validate[sd]?|reject\w*|not (be )?(blank|empty)|unique|duplicate)\b/i],
   ['Integration', /\b(api|apis|integrat\w*|third[- ]party|gateway|webhook|sms|email service|erp|crm|sap|salesforce|sync\w*|interface with|external system|rest|soap|feed|import from|export to)\b/i],
-  ['BusinessRule', /\b(if .+ then|eligib\w*|discount|calculat\w*|commission|interest rate|fees?|charges?|pric(e|es|ing)|tax|gst|vat|approval|approve[sd]?|workflow|policy|rule|threshold|limit of|per day|per transaction|percentage|\d+\s?%)\b/i],
+  ['BusinessRule', /\b(if .+ then|eligib\w*|discount|calculat\w*|commission|interest rate|fees?|charges?|pricing|tax|gst|vat|approval|approve[sd]?|workflow|policy|rule|threshold|limit of|per day|per transaction|percentage|\d+\s?%)\b/i],
   ['Data', /\b(stored|storage|stores? (?:the|all|each|every|data|records?|in|for)|database|retain\w*|retention|record(s|ed)?|archiv\w*|data (model|field|migration)|report(s|ing)?|export\w*|import\w*|audit trail|logs|logging|logged(?! in)|history)\b/i],
   ['UIUX', /\b(button|screen|page|display(s|ed)?|shown|show|colou?r|layout|click|tap|dropdown|drop-down|icon|menu|tab|modal|pop-?up|tooltip|label|font|banner|link|form|field|grid|dashboard|navigat\w*)\b/i],
   ['Functional', /\b(shall|must|should|will|can|may|allow(s|ed)?|enabl(e|es)|able to|provide[sd]?|support[sd]?|user(s)? (can|shall|must|should|will)|system (shall|must|should|will)|feature|function\w*|create|update|delete|search|login|log in|register|submit|send|generate|notify|upload|download)\b/i],
