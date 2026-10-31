@@ -150,6 +150,10 @@ model DocumentVersion {
   wordCountOriginal  Int?
   wordCountExtracted Int?
   reverseCheckOk     Boolean?
+  reverseCheckJson   String? // { originalWords, extractedWords, missing:[{word,count}], extra:[...] }
+  ocrUsed       Boolean  @default(false)
+  warnings      String? // JSON array of parser warnings
+  itemCount     Int      @default(0)
   parseStatus   String   @default("Pending") // Pending | Parsed | Failed
   parseError    String?
   diffJson      String? // added/modified/removed vs previous version
@@ -183,6 +187,8 @@ model RequirementItem {
   acknowledgedById String?
   acknowledgedAt   DateTime?
   changeType    String? // Added | Modified | Unchanged (vs previous version)
+  previousText  String? // text in the previous version when Modified
+  isCurrent     Boolean  @default(true) // false once superseded by a newer document version
   aiGenerated   Boolean  @default(false)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -195,6 +201,7 @@ model RequirementItem {
 
   @@unique([versionId, reqId])
   @@index([projectId, reqId])
+  @@index([projectId, isCurrent])
 }
 
 // ───────────────────────────── Module 2: artefacts ─────────────────────────────
