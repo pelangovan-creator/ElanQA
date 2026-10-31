@@ -18,6 +18,8 @@ const RULES: [string, RegExp][] = [
   ['Data', /\b(stored|storage|stores? (?:the|all|each|every|data|records?|in|for)|database|retain\w*|retention|record(s|ed)?|archiv\w*|data (model|field|migration)|report(s|ing)?|export\w*|import\w*|audit trail|logs|logging|logged(?! in)|history)\b/i],
   ['UIUX', /\b(button|screen|page|display(s|ed)?|shown|show|colou?r|layout|click|tap|dropdown|drop-down|icon|menu|tab|modal|pop-?up|tooltip|label|font|banner|link|form|field|grid|dashboard|navigat\w*)\b/i],
   ['Functional', /\b(shall|must|should|will|can|may|allow(s|ed)?|enabl(e|es)|able to|provide[sd]?|support[sd]?|user(s)? (can|shall|must|should|will)|system (shall|must|should|will)|feature|function\w*|create|update|delete|search|login|log in|register|submit|send|generate|notify|upload|download)\b/i],
+  // Behaviour stated in the passive voice without a modal verb: "A locked account is unlocked by an administrator."
+  ['Functional', /\b(is|are|gets?|get|becomes?|will be) (automatically )?(locked|unlocked|blocked|unblocked|disabled|enabled|activated|deactivated|sent|e-?mailed|created|deleted|removed|updated|saved|cancell?ed|approved|rejected|redirected|logged out|signed out|charged|refunded|notified|assigned|expired|reset|calculated|applied|added|cleared|emptied|restored|suspended|closed|reopened)\b/i],
 ];
 
 export interface Classification {

@@ -18,12 +18,12 @@ QA Pilot is an end-to-end QA management and test automation platform. It takes a
 | 2 | Requirement upload/parsing, zero-miss extraction, coverage, RTM | ✅ Done |
 | 3 | Clarifications, scenarios, test cases, techniques, test plan, test data + review workflow + exports | ✅ Done |
 | 4 | Playwright script generation, Run Test Cases, execution screens + demo app | ✅ Done |
-| 5 | Auto-defects with screenshots/attachments, defect management | |
+| 5 | Auto-defects with screenshots/attachments, defect management | ✅ Done |
 | 6 | Jira: manual step-by-step guide with illustrated screens (no Jira connection, by decision) | ✅ Done |
 | 7 | Morning/evening defect monitoring (in-app delivery) | ✅ Done |
 | 8 | DSR, WSR, Defect Report, Dashboard | ✅ Done |
 | 9 | Test Closure Report with risk highlighting | ✅ Done |
-| 10 | Hardening, tests, Docker | |
+| 10 | Hardening, tests, README, Docker | ✅ Done |
 
 ## Run locally (SQLite)
 
@@ -38,9 +38,9 @@ npm run dev               # API on :4000, web on :5173 (Vite proxies /api)
 npm run dev:demo          # optional: ShopEasy demo app on :4600 to run tests against
 ```
 
-Open http://localhost:5173.
+Open http://localhost:5173. Playwright's Chromium is needed for test runs and PDF exports; if it is not installed yet, run `npx playwright install --with-deps chromium` in `apps/api`.
 
-| Seeded account | Password | Role |
+| Seeded account (development) | Password | Role |
 |---|---|---|
 | admin@qapilot.local | `SEED_ADMIN_PASSWORD` (default `ChangeMe!123`) | Admin |
 | lead@qapilot.local | Demo!2345 | QA Lead |
@@ -48,25 +48,46 @@ Open http://localhost:5173.
 | dev@qapilot.local | Demo!2345 | Developer |
 | client@qapilot.local | Demo!2345 | Client (view-only) |
 
-Change these passwords before you use the app with real data.
+The demo users exist only in development (or with `SEED_DEMO_USERS=true`). Change every password before you use the app with real data. Each user can do this under **My account** (click your name at the top right).
 
 ## Run with Docker (PostgreSQL)
 
 ```bash
-cp .env.example .env      # set JWT_SECRET, ENCRYPTION_KEY (and POSTGRES_PASSWORD)
-docker compose up --build # http://localhost:8080
+cp .env.example .env
+# In .env set JWT_SECRET and ENCRYPTION_KEY (openssl rand -hex 32 each),
+# SEED_ADMIN_PASSWORD (12+ characters) and POSTGRES_PASSWORD
+docker compose up --build -d              # http://localhost:8080
+docker compose --profile demo up -d       # optional: also the ShopEasy demo app
 ```
 
-The API image builds a PostgreSQL schema from the SQLite dev schema (`npm run prisma:postgres`), applies it, seeds the admin account (idempotent) and starts the server.
+| Service | What it is |
+|---|---|
+| `db` | PostgreSQL 16, data in the `pgdata` volume |
+| `api` | NestJS API on the official Playwright image, so test runs and PDF exports have Chromium, Firefox and WebKit. It runs as a non-root user and has a health check. On start it applies the schema (generated from the SQLite dev schema), creates the first Admin if there is none, and starts the scheduler. Uploaded files and evidence live in the `storage` volume. |
+| `web` | nginx serving the built React app on port `WEB_PORT` (8080), proxying `/api`. It sets security headers (Content-Security-Policy, X-Frame-Options, nosniff) and caches hashed assets for a year. |
+| `demo` | Optional (`--profile demo`). In QA Pilot use **`http://demo:4600`** as the environment URL: tests run inside the `api` container, which reaches the demo by its service name. From your browser it is at `http://localhost:4600` (`DEMO_PORT`). |
+
+The API refuses to start in production with a SQLite `DATABASE_URL`, a `*` CORS origin, or a weak `JWT_SECRET`/`ENCRYPTION_KEY`. It also refuses to create the first Admin with the example password. Demo users are not created in Docker.
+
+**Backups of the whole server:** back up the `pgdata` and `storage` volumes together, for example `docker compose exec db pg_dump -U qapilot qapilot > qapilot.sql` plus a copy of the storage volume. For a single project, use the in-app backup (below).
+
+**Building behind a TLS-inspecting proxy:** if `npm ci` fails with certificate errors during `docker build`, pass the proxy's CA as a build secret: `docker build --secret id=npm_ca,src=/path/to/ca.pem -f apps/api/Dockerfile .` (it is used only while installing packages and is not stored in the image).
 
 ## Tests
 
 ```bash
-npm test                  # API unit + integration (Jest + Supertest) and web (Vitest + Testing Library)
+npm test                  # API (Jest + Supertest), web (Vitest + Testing Library) and demo app tests
 npm run typecheck
 ```
 
-API integration tests run against a throwaway SQLite DB (`apps/api/prisma/test.db`) and storage folder (`apps/api/test-storage`) that are recreated on every run. The API test script sets `NODE_OPTIONS=--experimental-vm-modules`, which the PDF library needs under Jest.
+| Suite | Covers |
+|---|---|
+| `apps/api/src/**/*.spec.ts` | Unit tests: parsing, classification, coverage, generators, export engine, risk matrix, clock |
+| `apps/api/test/*.e2e.spec.ts` | Integration tests through HTTP for every module: auth/RBAC, requirements, artefacts, execution (real Playwright runs against the demo app), defects, monitoring, reports, closure, **security** (lockout, token revocation, forged tokens, upload sniffing) and **backup/restore** |
+| `apps/web/src/**/*.test.tsx` | UI components and pages |
+| `apps/demo/server.test.js` | Demo app, including its deliberate bugs |
+
+The API integration tests run against a throwaway SQLite DB (`apps/api/prisma/test.db`) and storage folder (`apps/api/test-storage`), both recreated on every run. The API test script sets `NODE_OPTIONS=--experimental-vm-modules`, which the PDF library needs under Jest. GitHub Actions (`.github/workflows/ci.yml`) runs the type checks and all tests, and builds the three Docker images, on every pull request.
 
 The sample requirement documents in `apps/api/test/fixtures` are synthetic and are produced by `python3 apps/api/scripts/make-fixtures.py`. To see how any file is split, run:
 
@@ -74,21 +95,46 @@ The sample requirement documents in `apps/api/test/fixtures` are synthetic and a
 cd apps/api && npx ts-node --transpile-only -P tsconfig.json scripts/try-parse.ts srs-v1.docx
 ```
 
+### Accessibility and performance audit
+
+`apps/web/scripts/audit.mjs` signs in, opens every screen at desktop (1366 px) and phone (390 px) width, and for each one:
+- times the load;
+- runs axe-core with the WCAG 2.0/2.1/2.2 A and AA rules;
+- checks for sideways scrolling and console errors.
+
+It fails if any page has a problem or takes longer than 2 s. To test with a realistic data volume, first create a large synthetic project (1,000 requirements, 3,000 test cases, 3,000 results and 600 defects; `VOLUME_SCALE=2` doubles it):
+
+```bash
+npm run seed:volume --workspace apps/api            # or: docker compose exec api npm run seed:volume
+node apps/web/scripts/audit.mjs --base http://localhost:8080 --password '<admin password>' --project VOL
+```
+
+Result at the end of Phase 10, on the Docker stack (PostgreSQL), for the volume project and a real project with test runs:
+- 56 page views;
+- 0 axe violations, 0 console errors, no sideways scrolling;
+- every page loaded in 0.6–1.1 s, including the 0.5 s network-idle wait.
+
 ## Environment variables
 
 See [`.env.example`](.env.example). Nothing secret is hard-coded, and the API refuses to start without a strong `JWT_SECRET` and a 32-byte `ENCRYPTION_KEY`.
 
 | Variable | Purpose |
 |---|---|
-| `DATABASE_URL` | Prisma connection (`file:./dev.db` or a `postgresql://` URL) |
-| `JWT_SECRET`, `JWT_EXPIRES_IN` | Session tokens |
-| `ENCRYPTION_KEY` | AES-256-GCM key for credentials, API tokens and webhooks stored in the DB |
-| `CORS_ORIGIN` | Allowed web origins |
-| `STORAGE_DIR` | Uploaded documents, screenshots, videos, traces |
+| `DATABASE_URL` | Prisma connection (`file:./dev.db` or a `postgresql://` URL; PostgreSQL is required in production) |
+| `JWT_SECRET`, `JWT_EXPIRES_IN` | Session tokens (HS256, default 8 h) |
+| `ENCRYPTION_KEY` | AES-256-GCM key for credentials, API tokens and settings stored in the DB. Keep it safe: restoring a backup on another server needs the same key for encrypted values |
+| `CORS_ORIGIN` | Allowed web origins (comma-separated, no `*` in production) |
+| `STORAGE_DIR` | Uploaded documents, screenshots, videos, traces, run output |
+| `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD` | First Admin, created once |
+| `SEED_DEMO_USERS` | Create the demo users (default: development only) |
+| `MAX_FAILED_LOGINS`, `LOCKOUT_MINUTES` | Account lockout (default 5 failures, 15 minutes) |
+| `TRUST_PROXY` | Number of reverse-proxy hops to trust for the client IP (Docker sets 1) |
+| `BACKUP_UPLOAD_MAX_MB`, `BACKUP_MAX_MB` | Largest backup accepted for restore (default 1 GB upload, 2 GB unpacked) |
 | `ANTHROPIC_API_KEY`, `CLAUDE_MODEL` | Optional AI layer (default model `claude-opus-5-5`) |
 | `OCR_LANG`, `OCR_LANG_PATH` | OCR language (default `eng`, bundled) |
 | `MONITOR_TIMEZONE`, `MONITOR_MORNING_TIME`, `MONITOR_EVENING_TIME` | Default check schedule (09:30 and 18:00 Asia/Kolkata); each project can change it |
-| `MONITOR_SCHEDULER` | `false` stops the scheduler in this process (run it in one replica only if you prefer) |
+| `MONITOR_SCHEDULER` | `false` stops the scheduler in this process (with several API replicas, keep it on in one) |
+| `POSTGRES_PASSWORD`, `WEB_PORT`, `DEMO_PORT` | Docker Compose only |
 
 ## Roles and permissions
 
@@ -278,19 +324,75 @@ Also available with one click:
 - **Workflow:** Draft (editable; refresh keeps edits) → **Final** (requires a workaround and owner for every open defect) → **sign-off** by QA Lead, Project Manager and Client. A Client user signs their own section under their own name; the QA Lead records the others. When all three have signed, the report is **Signed Off** and the project is marked **Closed**, unless someone rejected.
 - **Exports:** PDF, Word and Excel (risk, exit criteria and sign-off sheets), plus an e-mail draft (.eml) whose subject carries the decision.
 
-## Security and compliance features (Phase 1)
+## Security and compliance
 
-- **Audit trail:** every create, update, delete, login, failed login and export is recorded with before/after snapshots. Secret-looking fields are redacted.
-- **Passwords:** bcrypt (cost 12) with a password policy. Login is rate-limited, and the error message is the same for an unknown user and a wrong password.
-- **Encryption:** project secrets are encrypted with AES-256-GCM and the API only returns them masked.
-- **Hardening:** Helmet headers, strict DTO validation (unknown fields rejected) and project-scoped authorization on every `/projects/:projectId/*` route.
-- **Backup:** full project export as JSON.
-- **Accessibility:** labelled controls, visible focus, a skip link, `role="alert"` on errors, and reduced-motion support (working towards WCAG 2.2 AA).
+- **Audit trail:** every change is recorded with who, what, when, the client IP and before/after snapshots, including logins, failed logins, lockouts, exports, backups and restores. Secret-looking fields are redacted.
+- **Passwords and sign-in:**
+  - Passwords are hashed with bcrypt (cost 12) and must meet a password policy.
+  - Sign-in is rate-limited per IP, and the error message is the same for an unknown user and a wrong password.
+  - After 5 failed attempts in a row the account is locked for 15 minutes. The Users page shows locked accounts, and an Admin can reset the password, which also unlocks the account.
+- **Sessions:** tokens are signed with HS256 only, and the API checks the user and their state on every request.
+  - Changing a password signs out every other session.
+  - Changing a user's role or deactivating them signs that user out everywhere.
+  - Anyone can **Sign out everywhere** from My account.
+- **Encryption:** project secrets and test credentials are encrypted with AES-256-GCM. The API only returns them masked, and passwords typed by tests are redacted from logs, step results and traces.
+- **Uploads:** checked against an allow-list and against the file's real content, not the type the browser claims. A script or SVG disguised as a screenshot is refused. Stored files are served with `nosniff` and a sandbox Content-Security-Policy, and only genuine PNG, JPEG, GIF or WebP images display inline. Everything else downloads.
+- **Hardening:**
+  - Helmet and nginx security headers, including a Content-Security-Policy with no inline scripts.
+  - Strict request validation (unknown fields are rejected) and project-scoped authorization on every `/projects/:projectId/*` route.
+  - Test code runs with an allow-listed environment, so the API's own secrets never reach it.
+  - The production configuration checks listed in the Docker section.
+- **Accessibility (WCAG 2.2 AA):**
+  - labelled controls, a visible focus indicator, a skip link, `role="alert"` on errors and reduced-motion support;
+  - charts have data tables, and severity is shown with text as well as colour;
+  - pages reflow to phone width without sideways scrolling;
+  - checked with axe-core on every screen (see the audit above).
+- **AI output:** every AI-generated artefact is marked "AI-generated – pending review" until a person approves it.
+
+## Backup and restore (Phase 10)
+
+- **Back up:** on a project's **Overview** page, Admins and QA Leads click **Export full project backup**. The download is one `.zip` containing:
+  - `backup.json`: every project table (requirements and versions, RTM links, clarifications, scenarios, test cases, test data, artefacts and review history, environments, scripts, runs and results, defects with history, monitoring checks, reports, closure reports, ID counters and the project's audit trail), plus name, e-mail and role for the users it refers to (never password hashes);
+  - `files/`: every stored file (original requirement documents, screenshots, videos, traces, run output) with a SHA-256 checksum for each.
+
+  Encrypted settings and credentials stay encrypted.
+- **Restore:** on the **Projects** page, click **Restore from backup**, choose the file and enter a new project key. The backup is restored as a **new project** and the original is never changed. During a restore:
+  - every record gets a new ID, and the links between records are rebuilt;
+  - team members are matched to accounts on this server by e-mail; people without an account are listed, and their work is attributed to whoever runs the restore;
+  - encrypted values that this server's `ENCRYPTION_KEY` cannot read are dropped and listed so you can enter them again;
+  - every file is checked against its checksum, and unsafe paths are refused;
+  - the restore is all-or-nothing.
+- A test fails if a database table is added without being included in the backup.
+
+## Acceptance criteria (section 12)
+
+| Criterion | Status | Where / how it is verified |
+|---|---|---|
+| Uploading a requirement document produces all artefacts in 3.1–3.6, with 100 % coverage shown or every gap acknowledged | ✅ | Requirements & RTM, Test Artefacts; `requirements.e2e`, `artefacts.e2e`. Rule-based generation covers every testable item. Items it considers non-testable are suggested as Informational, and the QA Lead accepts or acknowledges them. Analysis cannot be completed while any item is unmapped. |
+| "Run Test Cases" executes against a given URL and shows results live | ✅ | Test Execution; `execution.e2e` runs real Playwright tests against the demo app. Verified in Docker against the demo container (24 tests in about 15 s). |
+| Every failed test produces a defect with at least one screenshot | ✅ | Draft defects with screenshot, video, trace and logs; confirming a defect requires a screenshot. `defects.e2e`, plus the Docker check (5 of 5 failures). |
+| Defects can be pushed to Jira (when configured) and manual Jira steps are displayed | ⚠️ By decision | At your request there is **no Jira connection** (no credentials, push or sync). Each defect has a one-click illustrated step-by-step guide to create the ticket by hand, and you can record the Jira key. |
+| Morning and evening checks run on schedule and highlight Blocker/Critical/P1 | ✅ | Built-in time-zone-aware scheduler with catch-up after a restart; `monitoring.e2e`. Runs in Docker. |
+| DSR, WSR, Defect Report and Test Closure Report generate with all fields and export to PDF/Excel/Word | ✅ | Reports & Dashboard, Test Closure; `reports.e2e`, `closure.e2e`. PDF rendering verified inside the Docker image. |
+| Closure report highlights the risk of every open defect when closed early or on client request | ✅ | Test Closure; `closure.e2e`. |
 
 ## Repository layout
 
 ```
-apps/api     NestJS API (src/<module>), Prisma schema + seed, Jest tests
-apps/web     React app (src/pages, src/components, src/lib)
-docker-compose.yml
+apps/api            NestJS API (src/<module>), Prisma schema + seed, scripts (fixtures, volume seed), Jest tests
+apps/web            React app (src/pages, src/components, src/lib), scripts/audit.mjs, nginx config
+apps/demo           ShopEasy demo application under test (deliberate bugs, DEMO_BUGS=0 fixes them)
+docker-compose.yml  PostgreSQL + API + web (+ demo with --profile demo)
+.github/workflows   CI: typecheck, tests, Docker builds
 ```
+
+## Troubleshooting
+
+| Symptom | Fix |
+|---|---|
+| API exits with "Invalid configuration" | Set `JWT_SECRET` (32+ random characters) and `ENCRYPTION_KEY` (64 hex characters) in `.env`. |
+| Docker API exits with "Refusing to create the first Admin…" | Set `SEED_ADMIN_PASSWORD` (12+ characters) in `.env`. |
+| Test runs or PDF exports fail locally with "Executable doesn't exist" | Run `npx playwright install --with-deps chromium` in `apps/api`. Docker images already include the browsers. |
+| Runs in Docker cannot reach `http://localhost:…` | Inside Docker, `localhost` is the API container. Use the service name (`http://demo:4600`) or `http://host.docker.internal:<port>`. |
+| "Too many failed sign-in attempts" | Wait for the lockout to end, or ask an Admin to reset the password on the Users page. |
+| Restore warns that settings or credentials were dropped | The backup came from a server with a different `ENCRYPTION_KEY`. Enter those values again. |
