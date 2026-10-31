@@ -294,7 +294,7 @@ function Coverage() {
   return (
     <div className="space-y-4">
       <Alert kind="info">
-        Every item must be covered by at least one test scenario/case (test design arrives in Phase 3), or be marked <strong>Informational – no test needed</strong> with a reason,
+        Every item must be covered by at least one test scenario/case (generate them under Test Artefacts), or be marked <strong>Informational – no test needed</strong> with a reason,
         or be explicitly <strong>acknowledged by the QA Lead</strong>. The requirement analysis phase can only be completed when no item is unmapped.
       </Alert>
       {c.suggestions > 0 && can('requirements.edit') && (
@@ -388,7 +388,7 @@ function Questions() {
   const q = useQuery({ queryKey: ['questions', current!.id], queryFn: () => api<Question[]>(`/projects/${current!.id}/requirements/questions`) });
   return (
     <Card title="Clarification questions raised from ambiguous wording">
-      <p className="mb-3 text-sm text-slate-600">Editing, answering, assigning to the client and conflict/gap detection come with the full Clarification Log in Phase 3.</p>
+      <p className="mb-3 text-sm text-slate-600">Answer, assign and review these in <a className="text-brand-700 underline" href="/artefacts">Test Artefacts → Clarification Log</a>, which also detects conflicts and gaps.</p>
       <Table head={['Q-ID', 'Requirement', 'Location', 'Question', 'Priority', 'Status', '']} caption="Clarification questions">
         {q.data?.map((x) => (
           <tr key={x.id}>

@@ -81,6 +81,7 @@ export function designForItem(item: DesignItem, seq: () => string): DesignOutput
   const steps = (...s: [string, string][]): StepDraft[] => s.map(([action, expected], i) => ({ no: i + 1, action, expected }));
 
   const nums = extractNumbers(item.text);
+  const gist = (() => { const t = item.text.replace(/[.\s]+$/, ''); return t.length > 70 ? `${t.slice(0, 67).replace(/\s+\S*$/, '')}…` : t; })();
   const subject = item.columns ? Object.values(item.columns)[0] : undefined;
   const field = detectField(item.text, subject);
 
@@ -130,7 +131,7 @@ export function designForItem(item: DesignItem, seq: () => string): DesignOutput
       const conditions = (item.text.match(/\b(if|when|and|or|unless|only if|except)\b/gi) ?? []).length;
       const pos = scenario('Positive', `Business rule applied correctly (${ref})`);
       tc(pos, {
-        title: conditions >= 2 ? `Decision table: all condition combinations for ${ref}` : `Business rule is applied when its condition is met`,
+        title: conditions >= 2 ? `Decision table: ${gist}` : `${gist}: rule applied when the condition is met`,
         description: conditions >= 2 ? `Decision table - list every combination of the conditions in ${req} and the expected action for each.` : `Use case - main flow for ${req}.`,
         technique: conditions >= 2 ? 'DecisionTable' : 'UseCase', testType: 'Functional', automationCandidate: true,
         steps: conditions >= 2
@@ -139,7 +140,7 @@ export function designForItem(item: DesignItem, seq: () => string): DesignOutput
       });
       const neg = scenario('Negative', `Business rule not applied when its condition is not met (${ref})`);
       tc(neg, {
-        title: 'Business rule is not applied when the condition is not met', description: `Equivalence partitioning (non-qualifying class) for ${req}.`, technique: 'EquivalencePartitioning', testType: 'Negative', automationCandidate: true,
+        title: `${gist}: rule not applied when the condition is not met`, description: `Equivalence partitioning (non-qualifying class) for ${req}.`, technique: 'EquivalencePartitioning', testType: 'Negative', automationCandidate: true,
         steps: steps([nav, `${item.module} is displayed`], ['Perform the action with data that does not meet the rule condition', 'The rule is not applied and totals/state are unchanged']),
       });
       break;
@@ -147,12 +148,12 @@ export function designForItem(item: DesignItem, seq: () => string): DesignOutput
     case 'Integration': {
       const pos = scenario('Positive', `Integration works end to end (${ref})`);
       tc(pos, {
-        title: 'Successful call to the integrated system', description: `API/integration contract test for ${req}.`, technique: 'UseCase', testType: 'API', automationCandidate: true, suites: ['Smoke', 'Regression'],
+        title: `${gist}: successful call`, description: `API/integration contract test for ${req}.`, technique: 'UseCase', testType: 'API', automationCandidate: true, suites: ['Smoke', 'Regression'],
         steps: steps(['Trigger the operation that calls the external system with valid data', 'Request is sent with the agreed contract (endpoint, headers, payload)'], ['Inspect the response and the application state', `Successful response is handled: ${req}`]),
       });
       const neg = scenario('Negative', `Integration failures are handled (${ref})`);
       tc(neg, {
-        title: 'External system errors, timeouts and invalid responses are handled', description: `Error guessing for ${req}.`, technique: 'ErrorGuessing', testType: 'Integration', automationCandidate: true,
+        title: `${gist}: errors, timeouts and invalid responses handled`, description: `Error guessing for ${req}.`, technique: 'ErrorGuessing', testType: 'Integration', automationCandidate: true,
         steps: steps(['Simulate a timeout from the external system', 'User sees a friendly error; no duplicate transaction; retry is possible'], ['Simulate HTTP 4xx and 5xx responses', 'Errors are logged and shown appropriately; data stays consistent'], ['Simulate a malformed/partial response', 'Response is rejected safely; no crash or corrupted data']),
       });
       break;
@@ -160,11 +161,11 @@ export function designForItem(item: DesignItem, seq: () => string): DesignOutput
     case 'Data': {
       const pos = scenario('Positive', `Data is stored and retrieved correctly (${ref})`);
       tc(pos, {
-        title: 'Create, read, update and delete the data described', description: `CRUD verification for ${req}.`, technique: 'UseCase', testType: 'CRUD', automationCandidate: true,
+        title: `${gist}: create, read, update, delete`, description: `CRUD verification for ${req}.`, technique: 'UseCase', testType: 'CRUD', automationCandidate: true,
         steps: steps([nav, `${item.module} is displayed`], ['Create a record with valid test data', 'Record is saved and appears in the list/database'], ['Update the record and reload', 'Changes are persisted'], ['Delete the record (if allowed)', 'Record is removed / archived as specified'], ['Verify data retention / audit as described', `Behaviour matches ${req}`]),
       });
       tc(pos, {
-        title: 'Database state matches what the UI shows', description: `Database test for ${req}.`, technique: 'ChecklistBased', testType: 'Database', automationCandidate: false,
+        title: `${gist}: database state matches the UI`, description: `Database test for ${req}.`, technique: 'ChecklistBased', testType: 'Database', automationCandidate: false,
         steps: steps(['Perform the action that writes the data', 'UI confirms success'], ['Query the database for the record', 'Stored values, types and timestamps are correct; no duplicates']),
       });
       break;
@@ -172,11 +173,11 @@ export function designForItem(item: DesignItem, seq: () => string): DesignOutput
     case 'UIUX': {
       const pos = scenario('Positive', `UI element/behaviour as specified (${ref})`, 'Low');
       tc(pos, {
-        title: 'UI matches the specification', description: `Checklist-based UI test for ${req}.`, technique: 'ChecklistBased', testType: 'UI', automationCandidate: true,
+        title: `${gist}: UI matches the specification`, description: `Checklist-based UI test for ${req}.`, technique: 'ChecklistBased', testType: 'UI', automationCandidate: true,
         steps: steps([nav, `${item.module} is displayed`], ['Check the element/behaviour described', `Matches: ${req}`], ['Check labels, alignment, spelling and states (hover, focus, disabled)', 'Consistent with the style guide']),
       });
       tc(pos, {
-        title: 'Layout adapts to mobile, tablet and desktop widths', description: `Responsive check for ${req}.`, technique: 'ChecklistBased', testType: 'Responsive', automationCandidate: true, priority: 'Low',
+        title: `${gist}: responsive on mobile, tablet, desktop`, description: `Responsive check for ${req}.`, technique: 'ChecklistBased', testType: 'Responsive', automationCandidate: true, priority: 'Low',
         steps: steps(['View the page at 360px, 768px and 1366px widths', 'No overlap, truncation or horizontal scrolling; element remains usable']),
       });
       break;
@@ -190,7 +191,7 @@ export function designForItem(item: DesignItem, seq: () => string): DesignOutput
         tc(s, { title: 'Behaviour beyond expected load (stress)', description: `Stress test for ${req}.`, technique: 'ErrorGuessing', testType: 'Stress', automationCandidate: false, priority: 'Low', steps: steps(['Increase load to 2× expected until failure', 'System degrades gracefully, no data loss, recovers when load drops']) });
       } else if (sub === 'security') {
         const s = scenario('Negative', `Security requirement enforced (${ref})`, 'High');
-        tc(s, { title: 'Security control works as specified', description: `Security test for ${req}.`, technique: 'ChecklistBased', testType: 'Security', automationCandidate: true, steps: steps([nav, `${item.module} is displayed`], ['Verify the control described', `Matches: ${req}`]) });
+        tc(s, { title: `${gist}: control enforced`, description: `Security test for ${req}.`, technique: 'ChecklistBased', testType: 'Security', automationCandidate: true, steps: steps([nav, `${item.module} is displayed`], ['Verify the control described', `Matches: ${req}`]) });
         tc(s, { title: 'Common attacks are blocked (OWASP Top 10 checks)', description: `Error guessing - injection, XSS, broken access control, session handling for ${req}.`, technique: 'ErrorGuessing', testType: 'Security', automationCandidate: false, steps: steps(['Attempt SQL injection and XSS payloads from test data in related inputs', 'Payloads are rejected/encoded; no data exposure'], ['Access the feature with a lower-privileged role and by direct URL', 'Access is denied (403/redirect)'], ['Reuse a session token after logout', 'Token is invalid']) });
       } else if (sub === 'accessibility') {
         const s = scenario('Positive', `Accessibility (WCAG 2.2 AA) (${ref})`);
@@ -212,7 +213,7 @@ export function designForItem(item: DesignItem, seq: () => string): DesignOutput
     }
     case 'Constraint': {
       const s = scenario('Positive', `Constraint respected (${ref})`, 'Low');
-      tc(s, { title: 'Compliance with the stated constraint', description: `Checklist-based verification of ${req}.`, technique: 'ChecklistBased', testType: 'System', automationCandidate: false, steps: steps(['Review the build/configuration against the constraint', `Constraint satisfied: ${req}`]) });
+      tc(s, { title: `${gist}: constraint respected`, description: `Checklist-based verification of ${req}.`, technique: 'ChecklistBased', testType: 'System', automationCandidate: false, steps: steps(['Review the build/configuration against the constraint', `Constraint satisfied: ${req}`]) });
       break;
     }
     default: {
@@ -227,12 +228,12 @@ export function designForItem(item: DesignItem, seq: () => string): DesignOutput
       }
       const pos = scenario('Positive', `${item.text.replace(/[.\s]+$/, '').slice(0, 140)} (${ref})`);
       tc(pos, {
-        title: `Main flow works as specified`, description: `Use case / user story test - main success scenario for ${req}.`, technique: 'UseCase', testType: 'Functional', automationCandidate: true, suites: ['Smoke', 'Sanity', 'Regression'],
+        title: `${gist}: main flow`, description: `Use case / user story test - main success scenario for ${req}.`, technique: 'UseCase', testType: 'Functional', automationCandidate: true, suites: ['Smoke', 'Sanity', 'Regression'],
         steps: steps([nav, `${item.module} is displayed`], ['Perform the action described with valid data', `Outcome: ${req}`], ['Refresh / re-open the screen', 'Result is persisted and consistent']),
       });
       const neg = scenario('Negative', `Invalid use is handled (${ref})`);
       tc(neg, {
-        title: 'Invalid input, unauthorised role and interrupted flow are handled', description: `Error guessing for ${req}.`, technique: 'ErrorGuessing', testType: 'Negative', automationCandidate: true,
+        title: `${gist}: invalid input, wrong role, interrupted flow`, description: `Error guessing for ${req}.`, technique: 'ErrorGuessing', testType: 'Negative', automationCandidate: true,
         steps: steps(['Attempt the action with missing/invalid data', 'Clear error message; no partial save'], ['Attempt the action with a role that is not permitted', 'Action is not available or is denied'], ['Interrupt the flow (back button, double click, network loss)', 'No duplicate or inconsistent records']),
       });
     }

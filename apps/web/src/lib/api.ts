@@ -36,6 +36,7 @@ export async function api<T = unknown>(path: string, init: RequestInit & { json?
     } catch { /* non-JSON error body */ }
     throw new ApiError(res.status, msg);
   }
+  if (res.status === 204 || res.headers.get('content-length') === '0') return null as T; // e.g. "not generated yet"
   const type = res.headers.get('content-type') ?? '';
   return (type.includes('application/json') ? res.json() : res.blob()) as Promise<T>;
 }

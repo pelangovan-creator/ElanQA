@@ -57,3 +57,35 @@ export interface Question {
   id: string; qId: string; question: string; category: string; priority: string; status: string; sectionPage?: string | null;
   raisedBy?: string | null; raisedDate: string; aiGenerated: boolean; reviewStatus: string; requirement?: { reqId: string; text: string } | null;
 }
+
+export const TECHNIQUES = ['EquivalencePartitioning', 'BoundaryValueAnalysis', 'DecisionTable', 'StateTransition', 'UseCase', 'CauseEffectGraphing', 'Pairwise', 'ClassificationTree', 'ErrorGuessing', 'Exploratory', 'ChecklistBased', 'StatementCoverage', 'BranchCoverage', 'PathCoverage'] as const;
+export const TECHNIQUE_LABEL: Record<string, string> = {
+  EquivalencePartitioning: 'Equivalence Partitioning', BoundaryValueAnalysis: 'Boundary Value Analysis', DecisionTable: 'Decision Table', StateTransition: 'State Transition',
+  UseCase: 'Use Case / User Story', CauseEffectGraphing: 'Cause-Effect Graphing', Pairwise: 'Pairwise', ClassificationTree: 'Classification Tree', ErrorGuessing: 'Error Guessing',
+  Exploratory: 'Exploratory', ChecklistBased: 'Checklist-based', StatementCoverage: 'Statement coverage', BranchCoverage: 'Branch coverage', PathCoverage: 'Path coverage',
+};
+export const TEST_TYPES = ['Smoke', 'Sanity', 'Functional', 'Integration', 'System', 'EndToEnd', 'Regression', 'Retest', 'UAT', 'API', 'Database', 'UI', 'Usability', 'Accessibility', 'Compatibility', 'Responsive', 'Performance', 'Load', 'Stress', 'Security', 'Localization', 'DataMigration', 'Negative', 'CRUD'] as const;
+export const SCENARIO_TYPES = ['Positive', 'Negative', 'Edge', 'EndToEnd'] as const;
+export const PRIORITY_LEVELS = ['High', 'Medium', 'Low'] as const;
+export const SEVERITIES = ['Blocker', 'Critical', 'Major', 'Minor', 'Trivial'] as const;
+export const SUITES = ['Smoke', 'Sanity', 'Regression'] as const;
+export const Q_CATEGORIES = ['Ambiguity', 'MissingInfo', 'Conflict', 'Assumption', 'EdgeCase'] as const;
+
+export interface Reviewable { id: string; aiGenerated: boolean; reviewStatus: string; reviewComment?: string | null }
+export interface FullQuestion extends Question { assignedTo?: string | null; clientAnswer?: string | null; answerDate?: string | null; impact?: string | null; requirementId?: string | null }
+export interface Scenario extends Reviewable {
+  scenarioId: string; module: string; description: string; scenarioType: string; priority: string; preconditions?: string | null;
+  requirements: { id: string; reqId: string }[]; _count: { testCases: number };
+}
+export interface Step { no: number; action: string; expected: string }
+export interface TestCase extends Reviewable {
+  tcId: string; scenario?: { id: string; scenarioId: string } | null; module: string; title: string; description?: string | null; preconditions?: string | null;
+  testDataRef?: string | null; steps: Step[]; status: string; priority: string; severityIfFailed?: string | null; testType: string; technique: string;
+  automationCandidate: boolean; suites: string[]; comments?: string | null; needsRegeneration: boolean; requirements: { id: string; reqId: string; text?: string }[];
+  defectIds: string[]; actualResult?: string | null; executedBy?: string | null; executionDate?: string | null;
+}
+export interface TestData extends Reviewable {
+  dataId: string; tcIds: string[]; fieldName: string; dataType: string; validValues: string[]; invalidValues: string[];
+  boundaryValues: Record<string, string> | null; specialChars?: string | null; emptyNull?: string | null; expectedBehaviour?: string | null; environment?: string | null; notes?: string | null;
+}
+export interface DocArtefact extends Reviewable { type: string; title: string; version: number; updatedAt: string; content: { sections: { key: string; heading: string; body: string }[] } }

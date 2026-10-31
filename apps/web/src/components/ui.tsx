@@ -83,7 +83,7 @@ export function Table({ head, children, caption }: { head: string[]; children: R
       <table className="w-full text-left text-sm">
         {caption && <caption className="sr-only">{caption}</caption>}
         <thead className="border-b border-slate-200 text-xs uppercase text-slate-600">
-          <tr>{head.map((h) => <th key={h} scope="col" className="px-2 py-2 font-semibold">{h}</th>)}</tr>
+          <tr>{head.map((h, i) => <th key={i} scope="col" className="px-2 py-2 font-semibold">{h || <span className="sr-only">{i === 0 ? 'Select' : 'Actions'}</span>}</th>)}</tr>
         </thead>
         <tbody className="divide-y divide-slate-100">{children}</tbody>
       </table>

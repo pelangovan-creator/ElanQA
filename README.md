@@ -16,8 +16,8 @@ QA Pilot is an end-to-end QA management and test automation platform. It takes a
 |---|---|---|
 | 1 | Setup, auth, roles, multi-project, DB schema, audit trail, encryption | ✅ Done |
 | 2 | Requirement upload/parsing, zero-miss extraction, coverage, RTM | ✅ Done |
-| 3 | Clarifications, scenarios, test cases, techniques, test plan, test data + review workflow + exports | ⏳ Next |
-| 4 | Playwright script generation, Run Test Cases, execution screens | |
+| 3 | Clarifications, scenarios, test cases, techniques, test plan, test data + review workflow + exports | ✅ Done |
+| 4 | Playwright script generation, Run Test Cases, execution screens | ⏳ Next |
 | 5 | Auto-defects with screenshots/attachments, defect management | |
 | 6 | Jira guide + Jira REST integration | |
 | 7 | Morning/evening defect monitoring + notifications | |
@@ -119,6 +119,30 @@ Each user has a global role. A per-project membership role overrides it inside t
    - Test cases linked to modified or removed items are flagged for regeneration.
 8. **Coverage:** an item counts as covered when a scenario or test case is linked to it. Otherwise it needs a reason-backed "Informational – no test needed" mark, or a QA Lead acknowledgement. The phase is complete only when no item is unmapped.
 9. **RTM:** Requirement → Scenarios → Test cases → Execution status → Defects, always up to date, with Excel and CSV export.
+
+## Test artefacts (Phase 3)
+
+All artefacts are on the **Test Artefacts** screen. Every one can be edited and goes through **Approve / Reject with comment** (QA Lead or Admin). Editing an approved item sends it back for review. Machine-generated items show *AI-generated – pending review* until a human approves them; this applies to rule-based output as well as Claude output. Every artefact exports to **Excel, PDF and Word**: one document model is rendered by ExcelJS, Chromium (PDF) and the `docx` library.
+
+- **Clarification Log:** contains the ambiguity questions from Phase 2, plus conflicts and gaps that can be detected on request.
+  - *Conflicts* are similar statements that disagree on a number or on polarity (must vs must not).
+  - *Gaps* are things the document doesn't specify, such as lockout/unlock rules, session timeout, error messages, roles, upload limits, payment failure, notification failure, OTP validity, rounding and supported browsers.
+  - When `ANTHROPIC_API_KEY` is set, Claude adds its own findings. Duplicates are never created.
+  - Recording a client answer marks the question *Answered* and flags the linked test cases for regeneration.
+- **Scenarios & test cases:** designed for every testable item that isn't covered yet. Each test case is tagged with its technique:
+  - Equivalence partitioning, boundary value analysis (min-1 … max+1), decision table, state transition (e.g. lockout after N attempts), use case, error guessing, checklist (UI, WCAG 2.2 AA, OWASP), pairwise (browser × OS × device) and exploratory charters.
+  - Non-functional items get matching test types: Load/Stress, Security, Accessibility, Compatibility, Localization, Usability.
+  - An end-to-end scenario chains each module's main flow.
+  - Each test case is marked Smoke, Sanity and/or Regression, which Phase 4 uses to run suites.
+  - With Claude configured, Claude designs the cases and the rule-based generator covers any item Claude missed, so coverage is always complete.
+- **Regeneration:** replaces flagged test cases that are machine-generated, not approved and not yet executed. Approved, executed or manually written cases stay flagged for a person to update.
+- **Test Data Sheet:** synthetic values only:
+  - e-mail addresses on example.com, fictional +1-555-01xx phone numbers, public test card numbers;
+  - valid and invalid values, the six boundary values, special characters (including XSS and SQL-injection strings) and empty/null values;
+  - one test account per role, with passwords never stored in the sheet.
+  The Excel export has `TestData` and `Accounts` sheets for data-driven automation.
+- **Test Plan (IEEE 829 / ISO 29119):** 23 sections filled in from project data: scope and out-of-scope items, modules, test types and techniques used, the RACI from the project team, entry/exit/suspension criteria, the defect life cycle with severity/priority/SLA definitions, risks from ambiguous items and open questions, and assumptions. Each section can be edited, and regenerating creates a new version.
+- **Test Techniques Document:** explains every black-box, experience-based and white-box technique and every test type, and lists the test cases that use each one.
 
 ## Security and compliance features (Phase 1)
 
