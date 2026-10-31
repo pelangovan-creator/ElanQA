@@ -492,6 +492,8 @@ model Defect {
   retestResult    String?
   closedDate      DateTime?
   duplicateOfId   String?
+  duplicateCandidates String? // JSON [{defectId, id, score, reason}] suggested when the draft was created
+  testResultId    String? // the failed result that produced this defect (auto-created)
   jiraKey         String?
   jiraUrl         String?
   jiraStatus      String?

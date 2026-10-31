@@ -12,6 +12,7 @@ import { StorageService } from '../common/storage.service';
 import { AuthUser } from '../common/decorators';
 import { EnvironmentsService } from './environments.service';
 import { ScriptService } from './scripts/script.service';
+import { DefectsService } from '../defects/defects.service';
 
 export const RUN_MODES = ['All', 'Selected', 'Module', 'Priority', 'Smoke', 'Sanity', 'Regression', 'RerunFailed'] as const;
 export type RunMode = (typeof RUN_MODES)[number];
@@ -72,6 +73,7 @@ export class RunsService implements OnModuleDestroy {
     private readonly storage: StorageService,
     private readonly envs: EnvironmentsService,
     private readonly scripts: ScriptService,
+    private readonly defects: DefectsService,
   ) {}
 
   onModuleDestroy() {
@@ -181,8 +183,14 @@ export class RunsService implements OnModuleDestroy {
     const current = await this.prisma.testRun.findUniqueOrThrow({ where: { id: run.id } });
     const aborted = current.status === 'Aborted';
     append(aborted ? '■ Run aborted by user' : `■ Finished (exit code ${code})`);
-    await this.prisma.testRun.update({ where: { id: run.id }, data: { status: aborted ? 'Aborted' : 'Completed', finishedAt: new Date(), log } });
     await this.rollUpTestCases(projectId, run.id, user);
+    // Draft defects (with evidence) for failures; retests verify / reopen tracked defects.
+    if (!aborted) {
+      const d = await this.defects.processRun(projectId, run.id, user).catch((e) => { append(`! defect creation failed: ${(e as Error).message}`); return null; });
+      if (d && 'skipped' in d) append('■ Automatic defect creation is switched off for this project (setting defects.autoCreate)');
+      else if (d) append(`■ Defects: ${d.created} draft(s) created, ${d.reproduced} existing defect(s) updated, ${d.reopened} reopened, ${d.verified} verified by retest`);
+    }
+    await this.prisma.testRun.update({ where: { id: run.id }, data: { status: aborted ? 'Aborted' : 'Completed', finishedAt: new Date(), log } });
   }
 
   private async onEvent(projectId: string, runId: string, dir: string, rawEv: ReporterEvent, tcMap: Map<string, string>, user: AuthUser, append: (l: string) => void, secrets: string[]) {
@@ -338,6 +346,7 @@ export class RunsService implements OnModuleDestroy {
     if (!run) throw new NotFoundException('Manual run not found');
     await this.prisma.testRun.update({ where: { id: run.id }, data: { status: 'Completed', finishedAt: new Date() } });
     await this.audit.log({ userId: user.id, projectId, action: 'COMPLETE', entityType: 'TestRun', entityId: run.id });
-    return { ok: true };
+    const defects = await this.defects.processRun(projectId, run.id, user);
+    return { ok: true, defects };
   }
 }

@@ -9,6 +9,7 @@ export function toHtml(doc: ExportDoc): string {
     const h = s.level === 2 ? 'h3' : 'h2';
     let out = `<section><${h}>${esc(s.heading)}</${h}>`;
     for (const p of s.paragraphs ?? []) out += `<p>${multiline(p)}</p>`;
+    if (s.images?.length) out += `<div class="imgs">${s.images.map((im) => `<figure><img alt="${esc(im.caption)}" src="data:${esc(im.mimeType)};base64,${im.data.toString('base64')}"><figcaption>${esc(im.caption)}</figcaption></figure>`).join('')}</div>`;
     if (s.bullets?.length) out += `<ul>${s.bullets.map((b) => `<li>${multiline(b)}</li>`).join('')}</ul>`;
     if (s.keyValues?.length) out += `<table class="kv">${s.keyValues.map(([k, v]) => `<tr><th>${esc(k)}</th><td>${multiline(v)}</td></tr>`).join('')}</table>`;
     if (s.table) {
@@ -31,6 +32,7 @@ export function toHtml(doc: ExportDoc): string {
     table.kv th{width:28%;background:#f1f5f9;color:#0f172a}
     tr.red td{background:#fde2e2;color:#991b1b;font-weight:bold} tr.amber td{background:#fef3c7} tr.green td{background:#dcfce7}
     .muted{color:#64748b;font-style:italic}
+    .imgs{display:flex;flex-wrap:wrap;gap:8px} figure{margin:0;width:48%;page-break-inside:avoid} figure img{width:100%;border:1px solid #cbd5e1} figcaption{font-size:8pt;color:#475569}
   </style></head><body><h1>${esc(doc.title)}</h1>${doc.subtitle ? `<p class="sub">${esc(doc.subtitle)}</p>` : ''}
   ${doc.banner ? `<div class="banner">${esc(doc.banner)}</div>` : ''}
   ${doc.meta?.length ? `<table class="kv">${doc.meta.map(([k, v]) => `<tr><th>${esc(k)}</th><td>${esc(v)}</td></tr>`).join('')}</table>` : ''}

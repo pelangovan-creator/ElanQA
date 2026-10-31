@@ -12,6 +12,7 @@ import { AiModule } from './ai/ai.service';
 import { RequirementsModule } from './requirements/requirements.module';
 import { ArtefactsModule } from './artefacts/artefacts.module';
 import { ExecutionModule } from './execution/execution.module';
+import { DefectsModule } from './defects/defects.module';
 import { HealthController } from './health/health.controller';
 
 @Module({
@@ -28,6 +29,7 @@ import { HealthController } from './health/health.controller';
     RequirementsModule,
     ArtefactsModule,
     ExecutionModule,
+    DefectsModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],

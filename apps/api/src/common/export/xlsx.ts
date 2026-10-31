@@ -25,12 +25,13 @@ export async function renderXlsx(doc: ExportDoc): Promise<Buffer> {
   if (doc.banner) { const r = sum.addRow([doc.banner]); r.font = { bold: true, color: { argb: 'FF9A3412' } }; }
   for (const [k, v] of doc.meta ?? []) { const r = sum.addRow([k, v]); r.getCell(1).font = { bold: true }; }
   for (const s of doc.sections) {
-    if (!s.paragraphs && !s.bullets && !s.keyValues) continue;
+    if (!s.paragraphs && !s.bullets && !s.keyValues && !s.images) continue;
     sum.addRow([]);
     sum.addRow([s.heading]).font = { bold: true, size: 13 };
     for (const p of s.paragraphs ?? []) { const r = sum.addRow(['', guard(p)]); r.alignment = { wrapText: true, vertical: 'top' }; }
     for (const b of s.bullets ?? []) { const r = sum.addRow(['', guard(`• ${b}`)]); r.alignment = { wrapText: true, vertical: 'top' }; }
     for (const [k, v] of s.keyValues ?? []) { const r = sum.addRow([k, guard(v)]); r.getCell(1).font = { bold: true }; r.alignment = { wrapText: true, vertical: 'top' }; }
+    for (const im of s.images ?? []) sum.addRow(['', `Screenshot: ${im.caption} (embedded in the PDF/Word export)`]).font = { italic: true };
     if (s.table) sum.addRow(['', `See sheet "${s.table.sheetName ?? s.heading}"`]).font = { italic: true };
   }
   for (const s of doc.sections.filter((x) => x.table)) {

@@ -1,7 +1,8 @@
 import {
   AlignmentType, BorderStyle, Document, HeadingLevel, Packer, PageOrientation, Paragraph, ShadingType, Table, TableCell, TableRow, TextRun, WidthType,
 } from 'docx';
-import { cellText, ExportDoc } from './model';
+import { ImageRun } from 'docx';
+import { cellText, ExportDoc, imageSize } from './model';
 
 const SHADE = { red: 'FDE2E2', amber: 'FEF3C7', green: 'DCFCE7' } as const;
 const border = { style: BorderStyle.SINGLE, size: 4, color: 'CBD5E1' };
@@ -30,6 +31,14 @@ export async function renderDocx(doc: ExportDoc): Promise<Buffer> {
   for (const s of doc.sections) {
     children.push(new Paragraph({ text: s.heading, heading: s.level === 2 ? HeadingLevel.HEADING_2 : HeadingLevel.HEADING_1 }));
     for (const p of s.paragraphs ?? []) children.push(para(p));
+    for (const im of s.images ?? []) {
+      const type = /png/.test(im.mimeType) ? 'png' : /jpe?g/.test(im.mimeType) ? 'jpg' : /gif/.test(im.mimeType) ? 'gif' : undefined;
+      if (!type) continue;
+      const size = imageSize(im.data) ?? { width: 1366, height: 768 };
+      const width = Math.min(600, size.width);
+      children.push(new Paragraph({ children: [new ImageRun({ type, data: im.data, transformation: { width, height: Math.round((size.height / size.width) * width) } })] }));
+      children.push(para(im.caption, { color: '475569', size: 16 }));
+    }
     for (const b of s.bullets ?? []) children.push(new Paragraph({ text: b, bullet: { level: 0 } }));
     if (s.keyValues?.length) children.push(table(['Item', 'Detail'], s.keyValues.map(([k, v]) => [k, v])));
     if (s.table) {
