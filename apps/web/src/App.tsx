@@ -1,0 +1,28 @@
+import { Navigate, Route, Routes } from 'react-router-dom';
+import { useAuth } from './lib/auth';
+import { ProjectProvider } from './lib/project';
+import { Layout } from './components/Layout';
+import { Login } from './pages/Login';
+import { Overview } from './pages/Overview';
+import { Projects } from './pages/Projects';
+import { Users } from './pages/Users';
+import { Audit } from './pages/Audit';
+
+export function App() {
+  const { user, loading } = useAuth();
+  if (loading) return <p role="status" className="p-6">Loading…</p>;
+  if (!user) return <Login />;
+  return (
+    <ProjectProvider>
+      <Routes>
+        <Route element={<Layout />}>
+          <Route index element={<Overview />} />
+          <Route path="projects" element={<Projects />} />
+          <Route path="audit" element={<Audit />} />
+          {user.role === 'Admin' && <Route path="users" element={<Users />} />}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Route>
+      </Routes>
+    </ProjectProvider>
+  );
+}

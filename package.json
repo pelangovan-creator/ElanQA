@@ -1,0 +1,17 @@
+{
+  "name": "qa-pilot",
+  "private": true,
+  "version": "0.1.0",
+  "description": "QA Pilot - end-to-end QA management and test automation (STLC) platform",
+  "workspaces": ["apps/api", "apps/web"],
+  "scripts": {
+    "dev": "npm run dev --workspace apps/api & npm run dev --workspace apps/web",
+    "dev:api": "npm run dev --workspace apps/api",
+    "dev:web": "npm run dev --workspace apps/web",
+    "build": "npm run build --workspace apps/api && npm run build --workspace apps/web",
+    "test": "npm run test --workspace apps/api && npm run test --workspace apps/web",
+    "db:setup": "npm run db:setup --workspace apps/api",
+    "typecheck": "npm run typecheck --workspace apps/api && npm run typecheck --workspace apps/web"
+  },
+  "engines": { "node": ">=20" }
+}
