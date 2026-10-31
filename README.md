@@ -19,8 +19,8 @@ QA Pilot is an end-to-end QA management and test automation platform. It takes a
 | 3 | Clarifications, scenarios, test cases, techniques, test plan, test data + review workflow + exports | ✅ Done |
 | 4 | Playwright script generation, Run Test Cases, execution screens + demo app | ✅ Done |
 | 5 | Auto-defects with screenshots/attachments, defect management | |
-| 6 | Jira guide + Jira REST integration | ⏳ Next |
-| 7 | Morning/evening defect monitoring + notifications | |
+| 6 | Jira: manual step-by-step guide with illustrated screens (no Jira connection, by decision) | ✅ Done |
+| 7 | Morning/evening defect monitoring + notifications | ⏳ Next |
 | 8 | DSR, WSR, Defect Report, Dashboard | |
 | 9 | Test Closure Report with risk highlighting | |
 | 10 | Hardening, tests, Docker | |
@@ -210,6 +210,23 @@ The run finds the three bugs through five failing test cases (state transition, 
   - A single defect report in PDF/Word with the screenshots embedded, or in Excel.
   - The defect list in Excel/PDF/Word with every field and open Blocker/Critical/P1 defects highlighted in red.
 - Set the project setting `defects.autoCreate` to `false` to turn off automatic drafts.
+
+## Jira (Phase 6) – manual guide, no connection
+
+By decision, **QA Pilot does not connect to Jira**: there is no API call, no stored Jira credentials and no "Push to Jira". Instead, every confirmed defect has a one-click **Create in Jira – step-by-step guide**. It shows the 11 steps of section 6.1, and each step has:
+
+- the instruction;
+- this defect's own values, with **Copy** buttons:
+  - Summary;
+  - a prepared Description (pre-conditions, steps to reproduce, expected/actual result, environment, build, browser/device, test data, severity and references);
+  - Priority, mapped P1→Highest, P2→High, P3→Medium, P4→Low;
+  - Severity, Component, Affects Version, Labels, Assignee, and the requirement to link;
+- an **illustrated screen** of a generic issue form, filled with the defect's values, with the field to use outlined in red and the step number in a callout. These are illustrations, not real Jira screenshots: they carry no Atlassian branding and are labelled as such.
+
+Also available with one click:
+- **Download evidence (ZIP):** all screenshots, the video, the trace and the logs, ready to drag into Jira (step 9).
+- **Guide as PDF / Word:** the whole guide with all 11 illustrations, for sharing or printing.
+- **Save the Jira key** (and optional link) back on the defect (step 11). The key is validated (`PROJ-123`, `https://` links only), searchable in the defect list, shown on the defect and in exports, and recorded in its history.
 
 ## Security and compliance features (Phase 1)
 

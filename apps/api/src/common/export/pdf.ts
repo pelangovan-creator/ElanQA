@@ -69,3 +69,16 @@ export async function renderPdf(doc: ExportDoc): Promise<Buffer> {
     await ctx.close();
   }
 }
+
+/** Render a self-contained HTML page to a PNG (no network, no JavaScript). */
+export async function renderPng(html: string, width = 1200, height = 750): Promise<Buffer> {
+  const ctx = await (await browser()).newContext({ javaScriptEnabled: false, viewport: { width, height }, deviceScaleFactor: 1 });
+  try {
+    await ctx.route('**/*', (r) => r.abort());
+    const page = await ctx.newPage();
+    await page.setContent(html, { waitUntil: 'domcontentloaded' });
+    return await page.screenshot({ type: 'png' });
+  } finally {
+    await ctx.close();
+  }
+}

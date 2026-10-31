@@ -1,4 +1,4 @@
-import { IsDateString, IsIn, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsDateString, IsIn, IsOptional, IsString, IsUrl, Matches, MaxLength, MinLength, ValidateIf } from 'class-validator';
 import { DEFECT_STATUSES, DEFECT_TYPES, PRIORITIES, SEVERITIES } from '../common/enums';
 
 export class DefectDto {
@@ -22,6 +22,9 @@ export class DefectDto {
   @IsOptional() @IsString() @MaxLength(4000) rootCause?: string | null;
   @IsOptional() @IsString() @MaxLength(100) fixVersion?: string | null;
   @IsOptional() @IsDateString() targetDate?: string | null;
+  /** Typed in by the tester after creating the ticket manually - QA Pilot does not call Jira. */
+  @IsOptional() @ValidateIf((_, v) => v !== null) @Matches(/^[A-Z][A-Z0-9_]{0,19}-\d{1,7}$/, { message: 'Jira key looks like PROJ-123' }) jiraKey?: string | null;
+  @IsOptional() @ValidateIf((_, v) => v !== null) @IsUrl({ protocols: ['https'], require_protocol: true }) jiraUrl?: string | null;
 }
 export class CreateDefectDto extends DefectDto {
   @IsString() @MinLength(5) @MaxLength(250) declare title: string;

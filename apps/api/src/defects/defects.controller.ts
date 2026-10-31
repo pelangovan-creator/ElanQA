@@ -5,12 +5,38 @@ import { AuthUser, CurrentUser, RequirePermission } from '../common/decorators';
 import { ExportService } from '../common/export/export.service';
 import { DefectsService } from './defects.service';
 import { DefectsExportService } from './defects-export';
+import { JiraGuideService } from './jira-guide.service';
 import { CommentDto, CreateDefectDto, DefectDto, LinkDto, TransitionDto } from './dto';
 import { PRIORITY_DEFINITIONS, SEVERITY_DEFINITIONS, LIFECYCLE, STATUS_LABEL } from './lifecycle';
 
 @Controller('projects/:projectId/defects')
 export class DefectsController {
-  constructor(private readonly defects: DefectsService, private readonly exp: DefectsExportService, private readonly exporter: ExportService) {}
+  constructor(private readonly defects: DefectsService, private readonly exp: DefectsExportService, private readonly exporter: ExportService, private readonly guide: JiraGuideService) {}
+
+  // ── Manual Jira guide (no Jira connection): steps, illustrated screens, evidence ZIP
+  @Get(':id/jira-guide') @RequirePermission('project.view')
+  jiraGuide(@Param('projectId') p: string, @Param('id') id: string) { return this.guide.guide(p, id); }
+
+  @Get(':id/jira-guide/steps/:no.png') @RequirePermission('project.view')
+  async jiraStep(@Param('projectId') p: string, @Param('id') id: string, @Param('no') no: string, @Res() res: Response) {
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Cache-Control', 'private, max-age=300');
+    res.send(await this.guide.image(p, id, Number(no)));
+  }
+
+  @Get(':id/jira-guide/export') @RequirePermission('project.view')
+  async jiraGuideExport(@Param('projectId') p: string, @Param('id') id: string, @Query('format') f: string, @Res() res: Response) {
+    const doc = await this.guide.exportDoc(p, id);
+    await this.exporter.send(res, doc, f || 'pdf', `${doc.meta![0][1]}-Jira-guide`);
+  }
+
+  @Get(':id/evidence.zip') @RequirePermission('project.view')
+  async evidence(@Param('projectId') p: string, @Param('id') id: string, @CurrentUser() u: AuthUser, @Res() res: Response) {
+    const z = await this.guide.evidenceZip(p, id, u);
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="${z.fileName}"`);
+    res.send(z.data);
+  }
 
   @Get('meta') @RequirePermission('project.view')
   meta() { return { severity: SEVERITY_DEFINITIONS, priority: PRIORITY_DEFINITIONS, lifecycle: LIFECYCLE, statusLabel: STATUS_LABEL }; }

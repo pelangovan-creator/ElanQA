@@ -14,12 +14,13 @@ export interface DefectInput {
   environment?: string | null; build?: string | null; browserDeviceOs?: string | null; preconditions?: string | null; stepsToReproduce?: string | null;
   testDataUsed?: string | null; expectedResult?: string | null; actualResult?: string | null; severity?: string; priority?: string; defectType?: string;
   assignedTo?: string | null; rootCause?: string | null; fixVersion?: string | null; targetDate?: string | null;
+  jiraKey?: string | null; jiraUrl?: string | null;
 }
 export interface TransitionInput { to: string; comment?: string; assignedTo?: string; duplicateOfId?: string; rootCause?: string; fixVersion?: string }
 
 const EDITABLE: (keyof DefectInput)[] = [
   'title', 'description', 'module', 'requirementId', 'environment', 'build', 'browserDeviceOs', 'preconditions', 'stepsToReproduce', 'testDataUsed',
-  'expectedResult', 'actualResult', 'severity', 'priority', 'defectType', 'assignedTo', 'rootCause', 'fixVersion', 'targetDate',
+  'expectedResult', 'actualResult', 'severity', 'priority', 'defectType', 'assignedTo', 'rootCause', 'fixVersion', 'targetDate', 'jiraKey', 'jiraUrl',
 ];
 const ALLOWED_UPLOAD = /^(image\/(png|jpeg|gif|webp)|video\/(webm|mp4)|application\/(zip|json|pdf)|text\/plain)$/;
 const SIMILAR = 0.55;

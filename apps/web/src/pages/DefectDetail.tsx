@@ -8,6 +8,7 @@ import { DEFECT_STATUS_LABEL, DEFECT_TYPES, isHighImpact, PRIORITIES, PRIORITY_D
 import { Alert, Badge, Button, Card, Field, PageHeader, Select } from '../components/ui';
 import { ExportButtons } from './artefacts/shared';
 import { dbase, PriorityBadge, SeverityBadge } from './Defects';
+import { JiraGuide } from './JiraGuide';
 
 const KIND_LABEL: Record<string, string> = {
   AnnotatedScreenshot: 'Annotated screenshot', FailureScreenshot: 'Screenshot at failure', FullPageScreenshot: 'Full-page screenshot', Manual: 'Screenshot / upload',
@@ -20,15 +21,18 @@ export function DefectDetail() {
   const { id } = useParams();
   const { current } = useProject();
   const q = useQuery({ queryKey: ['defect', id], queryFn: () => api<DD>(`${dbase(current!.id)}/${id}`), enabled: !!current });
+  const [guide, setGuide] = useState(false);
   if (!q.data) return <p role="status">{q.error ? q.error.message : 'Loading…'}</p>;
   const d = q.data;
   return (
     <>
       <PageHeader title={`${d.defectId}${d.isDraft ? ' (draft)' : ''}`} subtitle={d.title}
-        actions={<><Link to="/defects" className="inline-flex min-h-9 items-center rounded-md border border-slate-300 bg-white px-3 text-sm">All defects</Link><ExportButtons fullPath={`${dbase(current!.id)}/${d.id}/export`} name={d.defectId} /></>} />
+        actions={<><Link to="/defects" className="inline-flex min-h-9 items-center rounded-md border border-slate-300 bg-white px-3 text-sm">All defects</Link>
+          {!d.isDraft && <Button onClick={() => setGuide(true)}>{d.jiraKey ? `Jira: ${d.jiraKey}` : 'Create in Jira – step-by-step guide'}</Button>}<ExportButtons fullPath={`${dbase(current!.id)}/${d.id}/export`} name={d.defectId} /></>} />
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <Badge color={d.open ? 'blue' : 'gray'}>{DEFECT_STATUS_LABEL[d.status] ?? d.status}</Badge><SeverityBadge s={d.severity} /><PriorityBadge p={d.priority} /><Badge>{d.defectType}</Badge>
-        <span className="text-sm text-slate-600">Age {d.ageDays} day(s){d.testCase ? ` · ${d.testCase.tcId}` : ''}{d.testRunId ? ` · ${d.testRunId}` : ''}{d.jiraKey ? ` · Jira ${d.jiraKey}` : ''}</span>
+        <span className="text-sm text-slate-600">Age {d.ageDays} day(s){d.testCase ? ` · ${d.testCase.tcId}` : ''}{d.testRunId ? ` · ${d.testRunId}` : ''}</span>
+        {d.jiraKey && (d.jiraUrl ? <a href={d.jiraUrl} target="_blank" rel="noreferrer" className="text-sm text-brand-700 underline">Jira {d.jiraKey}<span className="sr-only"> (opens in a new tab)</span></a> : <span className="text-sm">Jira {d.jiraKey}</span>)}
         {isHighImpact(d) && d.open && <Badge color="red">Blocker/Critical/P1 – high impact</Badge>}
       </div>
       {d.isDraft ? <DraftReview d={d} /> : <Lifecycle d={d} />}
@@ -39,6 +43,7 @@ export function DefectDetail() {
         </div>
         <History d={d} />
       </div>
+      {guide && <JiraGuide d={d} onClose={() => setGuide(false)} />}
     </>
   );
 }

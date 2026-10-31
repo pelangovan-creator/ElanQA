@@ -24,6 +24,7 @@ const ATTACHMENT_KIND: Record<string, string> = {
 };
 const STATUS: Record<string, string> = { passed: 'Pass', failed: 'Fail', timedOut: 'Fail', skipped: 'Skipped', interrupted: 'Blocked' };
 const MAX_LOG = 200_000;
+export const extFor = (mime: string) => ({ 'image/png': '.png', 'image/jpeg': '.jpg', 'image/webp': '.webp', 'image/gif': '.gif', 'video/webm': '.webm', 'video/mp4': '.mp4', 'application/zip': '.zip', 'application/json': '.json', 'text/plain': '.txt' } as Record<string, string>)[mime.split(';')[0]] ?? '.bin';
 
 /** Every representation of a secret that can appear in logs, traces or form bodies. */
 export function secretVariants(secrets: string[]): string[] {
@@ -219,7 +220,7 @@ export class RunsService implements OnModuleDestroy {
     for (const a of ev.attachments ?? []) {
       const kind = ATTACHMENT_KIND[a.name];
       if (!kind) continue;
-      const target = join(dir, 'evidence', result.id, `${a.name}${a.path ? extname(a.path) : a.contentType.includes('json') ? '.json' : '.bin'}`);
+      const target = join(dir, 'evidence', result.id, `${a.name}${a.path ? extname(a.path) : extFor(a.contentType)}`);
       await mkdir(dirname(target), { recursive: true });
       if (a.path) await copyFile(a.path, target); else if (a.body) await writeFile(target, Buffer.from(a.body, 'base64')); else continue;
       if (kind === 'Trace') await redactZip(target, secrets).catch((e) => append(`! trace redaction failed: ${(e as Error).message}`));

@@ -195,6 +195,45 @@ describe('Phase 5 - defect management: auto-creation with evidence, duplicates, 
     expect(done.log).toMatch(/switched off/);
   }, 120_000);
 
+  it('Jira (manual, no connection): 11-step guide with values, illustrated screens, evidence ZIP, guide export, key saved back', async () => {
+    const lock = (await api().get(`${D()}?q=after 3 failed`).set(as('tester'))).body[0];
+    const g = (await api().get(`${D()}/${lock.id}/jira-guide`).set(as('client')).expect(200)).body;
+    expect(g.steps.map((s: any) => s.no)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+    expect(g.jiraPriority).toBe('Highest'); // P1 → Highest
+    expect(g.steps[3].values[0]).toMatchObject({ label: 'Summary', value: lock.title, copy: true });
+    expect(g.description).toMatch(/\*Steps to Reproduce\*\n1\. /);
+    expect(g.description).toMatch(/\*Expected Result\*/);
+    expect(g.description).toMatch(/\*Actual Result\*/);
+    expect(g.description).toMatch(new RegExp(`References:\\* QA Pilot ${lock.defectId}`));
+    expect(g.steps[6].values.find((v: any) => v.label === 'Labels').value).toMatch(/QA, QA-Pilot, login/);
+    const png = await api().get(`${D()}/${lock.id}/jira-guide/steps/5.png`).set(as('client')).buffer(true).parse(binary).expect(200);
+    expect(png.headers['content-type']).toBe('image/png');
+    expect(png.body.subarray(1, 4).toString()).toBe('PNG');
+    await api().get(`${D()}/${lock.id}/jira-guide/steps/12.png`).set(as('client')).expect(404);
+
+    const zipRes = await api().get(`${D()}/${lock.id}/evidence.zip`).set(as('client')).buffer(true).parse(binary).expect(200);
+    const zip = await JSZip.loadAsync(zipRes.body);
+    const names = Object.keys(zip.files);
+    expect(names).toEqual(expect.arrayContaining(['README.txt']));
+    expect(names.some((n) => /^FullPageScreenshot-.*\.png$/.test(n))).toBe(true);
+    expect(names.some((n) => /^Trace-.*\.zip$/.test(n))).toBe(true);
+    expect(names.some((n) => n.endsWith('.bin'))).toBe(false);
+
+    const docx = await api().get(`${D()}/${lock.id}/jira-guide/export?format=docx`).set(as('client')).buffer(true).parse(binary).expect(200);
+    const dz = await JSZip.loadAsync(docx.body);
+    expect(Object.keys(dz.files).filter((f) => f.startsWith('word/media/')).length).toBe(11);
+    const pdf = await api().get(`${D()}/${lock.id}/jira-guide/export?format=pdf`).set(as('client')).buffer(true).parse(binary).expect(200);
+    expect(pdf.body.subarray(0, 5).toString()).toBe('%PDF-');
+
+    await api().patch(`${D()}/${lock.id}`).set(as('tester')).send({ jiraKey: 'not a key' }).expect(400);
+    await api().patch(`${D()}/${lock.id}`).set(as('tester')).send({ jiraUrl: 'javascript:alert(1)' }).expect(400);
+    await api().patch(`${D()}/${lock.id}`).set(as('client')).send({ jiraKey: 'SHOP-42' }).expect(403);
+    const saved = (await api().patch(`${D()}/${lock.id}`).set(as('tester')).send({ jiraKey: 'SHOP-42', jiraUrl: 'https://example.atlassian.net/browse/SHOP-42' }).expect(200)).body;
+    expect(saved).toMatchObject({ jiraKey: 'SHOP-42', jiraUrl: 'https://example.atlassian.net/browse/SHOP-42' });
+    expect(saved.history.at(-1)).toMatchObject({ field: 'jiraUrl' });
+    expect((await api().get(`${D()}?q=SHOP-42`).set(as('tester'))).body.map((d: any) => d.id)).toEqual([lock.id]);
+  }, 120_000);
+
   it('meta endpoint exposes severity/priority definitions for tooltips', async () => {
     const m = (await api().get(`${D()}/meta`).set(as('client')).expect(200)).body;
     expect(m.severity.Blocker).toMatch(/no workaround/);
