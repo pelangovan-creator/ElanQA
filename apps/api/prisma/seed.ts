@@ -8,6 +8,14 @@ const prisma = new PrismaClient();
 async function main() {
   const adminEmail = (process.env.SEED_ADMIN_EMAIL ?? 'admin@qapilot.local').toLowerCase();
   const adminPassword = process.env.SEED_ADMIN_PASSWORD ?? 'ChangeMe!123';
+  const production = process.env.NODE_ENV === 'production';
+  // Demo users share a published password, so they are only created in development
+  // unless SEED_DEMO_USERS=true is set explicitly.
+  const seedDemo = (process.env.SEED_DEMO_USERS ?? (production ? 'false' : 'true')) === 'true';
+  const existingAdmin = await prisma.user.findUnique({ where: { email: adminEmail } });
+  if (production && !existingAdmin && (adminPassword === 'ChangeMe!123' || adminPassword.length < 12)) {
+    throw new Error('Refusing to create the first Admin with the example password: set SEED_ADMIN_PASSWORD (12+ characters) in .env');
+  }
   const demoPassword = await bcrypt.hash('Demo!2345', 12);
 
   const admin = await prisma.user.upsert({
@@ -23,7 +31,7 @@ async function main() {
     { email: 'client@qapilot.local', name: 'Chris Client', role: 'Client' },
   ];
   const created = [];
-  for (const u of demoUsers) {
+  for (const u of seedDemo ? demoUsers : []) {
     created.push(await prisma.user.upsert({ where: { email: u.email }, update: {}, create: { ...u, passwordHash: demoPassword } }));
   }
 
@@ -39,7 +47,11 @@ async function main() {
       create: { projectId: project.id, userId: u.id, role: u.role },
     });
   }
-  console.log(`Seeded admin ${adminEmail}, ${created.length} demo users (password Demo!2345) and project DEMO`);
+  console.log(seedDemo
+    ? `Seeded admin ${adminEmail}, ${created.length} demo users (password Demo!2345) and project DEMO`
+    : `Seeded admin ${adminEmail} and project DEMO (no demo users; set SEED_DEMO_USERS=true to add them)`);
 }
 
-main().finally(() => prisma.$disconnect());
+main()
+  .catch((e) => { console.error(e instanceof Error ? e.message : e); process.exitCode = 1; })
+  .finally(() => prisma.$disconnect());

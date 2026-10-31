@@ -70,7 +70,7 @@ export function RunPanel() {
       </Card>
 
       <Card title="2. Run test cases">
-        <div className="grid gap-3 md:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
           <Select label="Environment" value={env?.id ?? ''} onChange={(e) => setEnvId(e.target.value)}>
             {envs.data?.map((e) => <option key={e.id} value={e.id}>{e.name} ({e.envType}) – {e.baseUrl}</option>)}
           </Select>

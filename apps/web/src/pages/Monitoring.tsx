@@ -33,7 +33,7 @@ export function Monitoring() {
         actions={<>{can('project.manage') && <Button onClick={() => run.mutate()} disabled={run.isPending}>{run.isPending ? 'Checking…' : 'Run check now'}</Button>}
           {c && <ExportButtons fullPath={`${mbase(current.id)}/checks/${c.id}/export`} name="Defect-Alert-Summary" />}</>} />
       {run.error && <Alert>{run.error.message}</Alert>}
-      <div className="grid gap-4 xl:grid-cols-[1fr_20rem]">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="space-y-4">
           {!c && !check.isLoading && <Alert kind="info">No check has run yet. {s?.enabled ? `The next one runs at ${s.morning} or ${s.evening} (${s.timeZone}).` : ''} {can('project.manage') && 'You can also run one now.'}</Alert>}
           {c && <Summary c={c} />}
@@ -84,7 +84,7 @@ function Summary({ c }: { c: MonitorCheck }) {
         <p className="mt-3 text-xs text-slate-600">Open by severity: {Object.entries(s.bySeverity).map(([k, v]) => `${k} ${v}`).join(' · ')} — by priority: {PRIORITIES.map((p) => `${p} ${s.byPriority[p] ?? 0}`).join(' · ')}</p>
       </Card>
       <DefectTable title="Blocker / Critical / P1 defects" rows={s.critical} tz={s.timeZone} empty="No open Blocker, Critical or P1 defects." emphasise />
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <DefectTable title="New since the last check" rows={s.newSince} tz={s.timeZone} compact />
         <DefectTable title="Reopened" rows={s.reopened} tz={s.timeZone} compact />
         <DefectTable title="Closed" rows={s.closed} tz={s.timeZone} compact />

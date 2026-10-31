@@ -1,4 +1,5 @@
 import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { verifyUpload } from '../common/file-type';
 import { type as osType, release as osRelease } from 'node:os';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -178,11 +179,14 @@ export class DefectsService {
   async addAttachment(projectId: string, id: string, file: { buffer: Buffer; originalname: string; mimetype: string; size: number } | undefined, user: AuthUser) {
     if (!file?.buffer?.length) throw new BadRequestException('A file is required');
     if (!ALLOWED_UPLOAD.test(file.mimetype)) throw new BadRequestException('Allowed: PNG, JPEG, GIF, WebP, WebM/MP4 video, ZIP (trace), JSON, PDF, plain text');
+    const checked = verifyUpload(file.mimetype, file.buffer);
+    if ('error' in checked) throw new BadRequestException(checked.error);
+    const mime = checked.mime;
     const d = await this.prisma.defect.findFirst({ where: { id, projectId } });
     if (!d) throw new NotFoundException('Defect not found');
     const rel = await this.storage.put(['projects', projectId, 'defects', id], file.originalname, file.buffer);
-    const kind = file.mimetype.startsWith('image/') ? 'Manual' : file.mimetype.startsWith('video/') ? 'Video' : file.mimetype === 'application/zip' ? 'Trace' : 'Manual';
-    await this.prisma.attachment.create({ data: { defectId: id, kind, fileName: rel.split('/').pop()!, mimeType: file.mimetype, storagePath: rel, sizeBytes: file.size } });
+    const kind = mime.startsWith('video/') ? 'Video' : mime === 'application/zip' ? 'Trace' : 'Manual';
+    await this.prisma.attachment.create({ data: { defectId: id, kind, fileName: rel.split('/').pop()!, mimeType: mime, storagePath: rel, sizeBytes: file.size } });
     await this.prisma.defectHistory.create({ data: { defectId: id, userId: user.id, kind: 'Comment', comment: `Attached ${file.originalname}` } });
     await this.audit.log({ userId: user.id, projectId, action: 'UPLOAD', entityType: 'Defect', entityId: id, after: { fileName: file.originalname } });
     return this.get(projectId, id, user);

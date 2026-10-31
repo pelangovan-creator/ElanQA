@@ -49,7 +49,7 @@ function ScenarioForm({ s, onDone }: { s: Scenario; onDone: () => void }) {
   const del = useMutation({ mutationFn: () => api(`${base(current!.id)}/scenarios/${s.id}`, { method: 'DELETE' }), onSuccess: () => { qc.invalidateQueries(); onDone(); } });
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value });
   return (
-    <form className="grid gap-3 md:grid-cols-4" onSubmit={(e) => { e.preventDefault(); save.mutate(); }}>
+    <form className="grid grid-cols-1 gap-3 md:grid-cols-4" onSubmit={(e) => { e.preventDefault(); save.mutate(); }}>
       <Field label="Module" value={f.module} onChange={set('module')} />
       <Select label="Type" value={f.scenarioType} onChange={set('scenarioType')}>{SCENARIO_TYPES.map((t) => <option key={t}>{t}</option>)}</Select>
       <Select label="Priority" value={f.priority} onChange={set('priority')}>{PRIORITY_LEVELS.map((t) => <option key={t}>{t}</option>)}</Select>

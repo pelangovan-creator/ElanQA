@@ -59,7 +59,7 @@ function DataForm({ d, onDone }: { d: TestData; onDone: () => void }) {
     <div className="flex flex-col gap-1"><label htmlFor={id} className="text-sm font-medium">{label}</label><textarea id={id} rows={4} className="rounded border border-slate-400 p-1 text-sm" value={v} onChange={(e) => on(e.target.value)} /></div>
   );
   return (
-    <form className="grid gap-3 md:grid-cols-3" onSubmit={(e) => { e.preventDefault(); m.mutate(); }}>
+    <form className="grid grid-cols-1 gap-3 md:grid-cols-3" onSubmit={(e) => { e.preventDefault(); m.mutate(); }}>
       <Field label="Field name" value={f.fieldName} onChange={(e) => setF({ ...f, fieldName: e.target.value })} />
       <Field label="Data type" value={f.dataType} onChange={(e) => setF({ ...f, dataType: e.target.value })} />
       <Field label="Environment" value={f.environment} onChange={(e) => setF({ ...f, environment: e.target.value })} />

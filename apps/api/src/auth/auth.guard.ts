@@ -26,14 +26,16 @@ export class AuthGuard implements CanActivate {
     const token = header?.startsWith('Bearer ') ? header.slice(7) : undefined;
     if (!token) throw new UnauthorizedException('Missing bearer token');
 
-    let payload: { sub: string };
+    let payload: { sub: string; tv?: number };
     try {
-      payload = await this.jwt.verifyAsync(token);
+      payload = await this.jwt.verifyAsync(token, { algorithms: ['HS256'] });
     } catch {
       throw new UnauthorizedException('Invalid or expired token');
     }
     const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
     if (!user || !user.active) throw new UnauthorizedException('Account disabled');
+    // Tokens issued before a password change, role change, deactivation or "sign out everywhere" are revoked.
+    if ((payload.tv ?? 0) !== user.tokenVersion) throw new UnauthorizedException('Session expired - please sign in again');
 
     const authUser: AuthUser = { id: user.id, email: user.email, name: user.name, role: user.role };
     req.user = authUser;

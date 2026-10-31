@@ -14,7 +14,7 @@ export function Environments() {
     <div className="space-y-4">
       {q.data?.map((e) => edit === e.id ? <EnvForm key={e.id} env={e} onDone={() => setEdit(null)} /> : (
         <Card key={e.id} title={<>{e.name} <Badge>{e.envType}</Badge></>} actions={can('execution.run') && <Button variant="secondary" onClick={() => setEdit(e.id)}>Edit<span className="sr-only"> {e.name}</span></Button>}>
-          <dl className="grid gap-x-6 gap-y-1 text-sm md:grid-cols-2">
+          <dl className="grid grid-cols-1 gap-x-6 gap-y-1 text-sm md:grid-cols-2">
             <div><dt className="inline font-semibold">URL: </dt><dd className="inline">{e.baseUrl}</dd></div>
             <div><dt className="inline font-semibold">Browsers: </dt><dd className="inline">{e.browsers.join(', ')} · viewport {e.viewport ?? '1366x768'}</dd></div>
             <div><dt className="inline font-semibold">Parallel workers / retries / timeout: </dt><dd className="inline">{e.workers} / {e.retries} / {e.timeoutMs / 1000}s</dd></div>
@@ -51,7 +51,7 @@ function EnvForm({ env, onDone }: { env?: Environment; onDone: () => void }) {
   const del = useMutation({ mutationFn: () => api(`${xbase(current!.id)}/environments/${env!.id}`, { method: 'DELETE' }), onSuccess: () => { qc.invalidateQueries({ queryKey: ['environments'] }); onDone(); } });
   return (
     <Card title={env ? `Edit ${env.name}` : 'New environment'}>
-      <form className="grid gap-3 md:grid-cols-4" onSubmit={(e) => { e.preventDefault(); m.mutate(); }}>
+      <form className="grid grid-cols-1 gap-3 md:grid-cols-4" onSubmit={(e) => { e.preventDefault(); m.mutate(); }}>
         <Field label="Name" required value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
         <Select label="Type" value={f.envType} onChange={(e) => setF({ ...f, envType: e.target.value })}>{['QA', 'UAT', 'Staging', 'Dev', 'Production'].map((t) => <option key={t}>{t}</option>)}</Select>
         <div className="md:col-span-2"><Field label="Application URL" required type="url" value={f.baseUrl} onChange={(e) => setF({ ...f, baseUrl: e.target.value })} placeholder="https://qa.example.com" /></div>
@@ -69,7 +69,7 @@ function EnvForm({ env, onDone }: { env?: Environment; onDone: () => void }) {
         <fieldset className="md:col-span-4 rounded border border-slate-200 p-3">
           <legend className="px-1 text-sm font-medium">Test accounts (stored encrypted; passwords are never shown again)</legend>
           {creds.map((c, i) => (
-            <div key={i} className="grid gap-2 md:grid-cols-[1fr_2fr_2fr_auto]">
+            <div key={i} className="grid grid-cols-1 gap-2 md:grid-cols-[minmax(0,1fr)_2fr_2fr_auto]">
               <Field label="Role" value={c.role} onChange={(e) => setCreds(creds.map((x, j) => (j === i ? { ...x, role: e.target.value } : x)))} />
               <Field label="Username / e-mail" autoComplete="off" value={c.username} onChange={(e) => setCreds(creds.map((x, j) => (j === i ? { ...x, username: e.target.value } : x)))} />
               <Field label="Password" type="password" autoComplete="new-password" value={c.password} placeholder={env?.credentials[c.role] ? 'Leave empty to keep' : ''} onChange={(e) => setCreds(creds.map((x, j) => (j === i ? { ...x, password: e.target.value } : x)))} />

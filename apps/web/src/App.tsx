@@ -17,6 +17,7 @@ import { DefectDetail } from './pages/DefectDetail';
 import { Monitoring } from './pages/Monitoring';
 import { Reports } from './pages/Reports';
 import { Closure } from './pages/Closure';
+import { Account } from './pages/Account';
 
 export function App() {
   const { user, loading } = useAuth();
@@ -39,6 +40,7 @@ export function App() {
           <Route path="monitoring" element={<Monitoring />} />
           <Route path="reports" element={<Reports />} />
           <Route path="closure" element={<Closure />} />
+          <Route path="account" element={<Account />} />
           {user.role === 'Admin' && <Route path="users" element={<Users />} />}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

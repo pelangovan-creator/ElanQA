@@ -1,12 +1,17 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Res } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Res, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { BackupService } from './backup.service';
 import type { Response } from 'express';
 import { ProjectsService } from './projects.service';
-import { AddMemberDto, CreateProjectDto, SettingDto, UpdateProjectDto } from './projects.dto';
+import { AddMemberDto, CreateProjectDto, RestoreProjectDto, SettingDto, UpdateProjectDto } from './projects.dto';
+
+/** Largest backup upload accepted (compressed), default 1 GB. */
+const MAX_BACKUP_UPLOAD = Number(process.env.BACKUP_UPLOAD_MAX_MB ?? 1024) * 1024 * 1024;
 import { AuthUser, CurrentUser, RequirePermission } from '../common/decorators';
 
 @Controller('projects')
 export class ProjectsController {
-  constructor(private readonly projects: ProjectsService) {}
+  constructor(private readonly projects: ProjectsService, private readonly backup: BackupService) {}
 
   @Get()
   list(@CurrentUser() user: AuthUser) {
@@ -56,11 +61,21 @@ export class ProjectsController {
     return this.projects.setSetting(id, dto, user);
   }
 
+  /** Full project backup: ZIP with every table and every stored file. */
   @Get(':projectId/export')
   @RequirePermission('project.export')
   async export(@Param('projectId') id: string, @CurrentUser() user: AuthUser, @Res() res: Response) {
-    const data = await this.projects.exportProject(id, user);
-    res.setHeader('Content-Disposition', `attachment; filename="qa-pilot-${data.project.key}-${new Date().toISOString().slice(0, 10)}.json"`);
-    res.json(data);
+    const out = await this.backup.exportZip(id, user);
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="${out.fileName}"`);
+    out.stream.pipe(res);
+  }
+
+  /** Restores a backup ZIP as a new project with the given key. */
+  @Post('restore')
+  @RequirePermission('project.create')
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: MAX_BACKUP_UPLOAD, files: 1 } }))
+  restore(@UploadedFile() file: { buffer: Buffer } | undefined, @Body() dto: RestoreProjectDto, @CurrentUser() user: AuthUser) {
+    return this.backup.restore(file?.buffer as Buffer, dto, user);
   }
 }

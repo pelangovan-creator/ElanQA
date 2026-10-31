@@ -30,3 +30,9 @@ export class SettingDto {
   @IsString() value: string;
   @IsOptional() encrypted?: boolean;
 }
+
+export class RestoreProjectDto {
+  @Matches(/^[A-Z][A-Z0-9]{1,9}$/, { message: 'key must be 2-10 upper-case letters/digits, starting with a letter' })
+  key: string;
+  @IsOptional() @IsString() @MaxLength(120) name?: string;
+}

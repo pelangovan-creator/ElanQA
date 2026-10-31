@@ -15,7 +15,7 @@ export function Scripts() {
   const groups = Object.keys(KIND).map((k) => [k, (q.data ?? []).filter((s) => s.kind === k)] as const).filter(([, v]) => v.length);
   if (q.data?.length === 0) return <Alert kind="info">No scripts yet. Generate them on the Run tab.</Alert>;
   return (
-    <div className="grid gap-4 lg:grid-cols-[22rem_1fr]">
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-[22rem_minmax(0,1fr)]">
       <Card title="Playwright project">
         <nav aria-label="Script files" className="max-h-[70vh] overflow-auto text-sm">
           {groups.map(([k, files]) => (

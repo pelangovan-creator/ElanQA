@@ -4,7 +4,7 @@ import { AuditService } from '../audit/audit.service';
 import { hashPassword, passwordPolicyError } from '../auth/password';
 import { CreateUserDto, UpdateUserDto } from './users.dto';
 
-export const PUBLIC_USER = { id: true, email: true, name: true, role: true, active: true, lastLoginAt: true, createdAt: true } as const;
+export const PUBLIC_USER = { id: true, email: true, name: true, role: true, active: true, lastLoginAt: true, lockedUntil: true, createdAt: true } as const;
 
 @Injectable()
 export class UsersService {
@@ -38,6 +38,10 @@ export class UsersService {
       if (err) throw new BadRequestException(err);
       data.passwordHash = await hashPassword(dto.password);
     }
+    // A reset password or re-activation also clears a sign-in lockout.
+    if (dto.password || dto.active === true) Object.assign(data, { failedLogins: 0, lockedUntil: null });
+    // Revoke existing sessions when the password, role or active state changes.
+    if (dto.password || (dto.role && dto.role !== before.role) || dto.active === false) data.tokenVersion = { increment: 1 };
     const after = await this.prisma.user.update({ where: { id }, data, select: PUBLIC_USER });
     await this.audit.log({ userId: actorId, action: 'UPDATE', entityType: 'User', entityId: id, before, after });
     return after;

@@ -111,40 +111,6 @@ export class ProjectsService {
     return r.encrypted ? this.crypto.decrypt(r.value) : r.value;
   }
 
-  /** Full project backup as JSON (encrypted values remain encrypted). */
-  async exportProject(projectId: string, user: AuthUser) {
-    const p = this.prisma;
-    const where = { projectId };
-    const [project, members, settings, documents, requirements, questions, scenarios, scenarioLinks, testCases, testCaseLinks,
-      testData, artefacts, environments, scripts, runs, defects, monitorChecks, reports] = await Promise.all([
-      p.project.findUniqueOrThrow({ where: { id: projectId } }),
-      p.projectMember.findMany({ where, include: { user: { select: { email: true, name: true } } } }),
-      p.projectSetting.findMany({ where }),
-      p.requirementDocument.findMany({ where, include: { versions: true } }),
-      p.requirementItem.findMany({ where }),
-      p.clarificationQuestion.findMany({ where }),
-      p.testScenario.findMany({ where }),
-      p.scenarioRequirement.findMany({ where: { scenario: { projectId } } }),
-      p.testCase.findMany({ where }),
-      p.testCaseRequirement.findMany({ where: { testCase: { projectId } } }),
-      p.testDataItem.findMany({ where }),
-      p.artefact.findMany({ where }),
-      p.testEnvironment.findMany({ where }),
-      p.automationScript.findMany({ where }),
-      p.testRun.findMany({ where, include: { results: { include: { attachments: true } } } }),
-      p.defect.findMany({ where, include: { attachments: true, history: true } }),
-      p.monitorCheck.findMany({ where }),
-      p.report.findMany({ where }),
-    ]);
-    await this.audit.log({ userId: user.id, projectId, action: 'EXPORT', entityType: 'Project', entityId: projectId });
-    return {
-      format: 'qa-pilot-backup', formatVersion: 1, exportedAt: new Date().toISOString(), exportedBy: user.email,
-      note: 'Encrypted settings/credentials are exported as ciphertext and require the same ENCRYPTION_KEY to restore. Binary files (originals, screenshots) are referenced by storagePath.',
-      project, members, settings, documents, requirements, questions, scenarios, scenarioLinks, testCases, testCaseLinks,
-      testData, artefacts, environments, scripts, runs, defects, monitorChecks, reports,
-    };
-  }
-
   /** Effective permissions for the UI to show/hide actions. */
   permissionsFor(role: string) {
     const all = ['project.manage', 'project.export', 'audit.view', 'requirements.edit', 'coverage.acknowledge', 'artefacts.edit',

@@ -1,5 +1,6 @@
 import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException, OnModuleDestroy } from '@nestjs/common';
 import { ChildProcess, spawn } from 'node:child_process';
+import { verifyUpload } from '../common/file-type';
 import { copyFile, mkdir, stat, writeFile } from 'node:fs/promises';
 import { basename, dirname, extname, join } from 'node:path';
 import { readFile } from 'node:fs/promises';
@@ -334,10 +335,12 @@ export class RunsService implements OnModuleDestroy {
   async addManualAttachment(projectId: string, runDbId: string, resultId: string, file: { buffer: Buffer; originalname: string; mimetype: string; size: number } | undefined, user: AuthUser) {
     if (!file?.buffer?.length) throw new BadRequestException('A file is required');
     if (!/^image\/(png|jpeg|gif|webp)$/.test(file.mimetype)) throw new BadRequestException('Screenshots must be PNG, JPEG, GIF or WebP');
+    const checked = verifyUpload(file.mimetype, file.buffer);
+    if ('error' in checked) throw new BadRequestException(checked.error);
     const result = await this.prisma.testResult.findFirst({ where: { id: resultId, runId: runDbId, run: { projectId } } });
     if (!result) throw new NotFoundException('Result not found - save the step results first');
     const rel = await this.storage.put(['projects', projectId, 'manual', resultId], file.originalname, file.buffer);
-    const a = await this.prisma.attachment.create({ data: { testResultId: resultId, kind: 'Manual', fileName: basename(rel), mimeType: file.mimetype, storagePath: rel, sizeBytes: file.size } });
+    const a = await this.prisma.attachment.create({ data: { testResultId: resultId, kind: 'Manual', fileName: basename(rel), mimeType: checked.mime, storagePath: rel, sizeBytes: file.size } });
     await this.audit.log({ userId: user.id, projectId, action: 'UPLOAD', entityType: 'Attachment', entityId: a.id });
     return a;
   }

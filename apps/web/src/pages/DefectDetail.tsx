@@ -36,7 +36,7 @@ export function DefectDetail() {
         {isHighImpact(d) && d.open && <Badge color="red">Blocker/Critical/P1 – high impact</Badge>}
       </div>
       {d.isDraft ? <DraftReview d={d} /> : <Lifecycle d={d} />}
-      <div className="mt-4 grid gap-4 xl:grid-cols-[1fr_26rem]">
+      <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_26rem]">
         <div className="space-y-4">
           <Evidence d={d} />
           <Fields key={d.id + d.status} d={d} />
@@ -103,7 +103,7 @@ function Lifecycle({ d }: { d: DD }) {
         {d.allowedTransitions.map((s) => <Button key={s} variant={to === s ? 'primary' : 'secondary'} aria-pressed={to === s} onClick={() => setTo(to === s ? null : s)}>→ {DEFECT_STATUS_LABEL[s] ?? s}</Button>)}
       </div>
       {to && (
-        <form className="mt-3 grid gap-3 md:grid-cols-3" onSubmit={(e) => { e.preventDefault(); m.mutate(); }}>
+        <form className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3" onSubmit={(e) => { e.preventDefault(); m.mutate(); }}>
           {to === 'Assigned' && <Select label="Assign to" required value={f.assignedTo} onChange={(e) => setF({ ...f, assignedTo: e.target.value })}><option value="">Select…</option>{users.data?.map((u) => <option key={u.id} value={u.name}>{u.name} ({u.role})</option>)}</Select>}
           {to === 'Fixed' && <><div className="md:col-span-2"><Field label="Root cause" required value={f.rootCause} onChange={(e) => setF({ ...f, rootCause: e.target.value })} /></div><Field label="Fix version" value={f.fixVersion} onChange={(e) => setF({ ...f, fixVersion: e.target.value })} /></>}
           {to === 'Duplicate' && <Field label="Original defect ID" required value={f.duplicateOfId} onChange={(e) => setF({ ...f, duplicateOfId: e.target.value })} placeholder="DEF-0001" />}
@@ -144,7 +144,7 @@ function Fields({ d }: { d: DD }) {
   return (
     <Card title="Defect report">
       <form onSubmit={(e) => { e.preventDefault(); m.mutate(); }} className="space-y-4">
-        <fieldset disabled={lock} className="grid gap-3 md:grid-cols-4">
+        <fieldset disabled={lock} className="grid grid-cols-1 gap-3 md:grid-cols-4">
           <legend className="sr-only">Summary and classification</legend>
           <div className="md:col-span-4"><Field label="Title / summary" value={f.title} onChange={set('title')} /></div>
           <div>
@@ -162,7 +162,7 @@ function Fields({ d }: { d: DD }) {
           <Field label="Build / version" value={f.build} onChange={set('build')} />
           <Field label="Browser / device / OS" value={f.browserDeviceOs} onChange={set('browserDeviceOs')} />
         </fieldset>
-        <div className="grid gap-3 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           {ta('description', 'Description')}
           {ta('preconditions', 'Pre-conditions')}
           {ta('stepsToReproduce', 'Steps to reproduce', 6)}
@@ -170,7 +170,7 @@ function Fields({ d }: { d: DD }) {
           {ta('expectedResult', 'Expected result')}
           {ta('actualResult', 'Actual result')}
         </div>
-        <fieldset disabled={!canEdit} className="grid gap-3 md:grid-cols-3">
+        <fieldset disabled={!canEdit} className="grid grid-cols-1 gap-3 md:grid-cols-3">
           <legend className="mb-1 text-sm font-semibold">Resolution{devOnly ? ' (you can edit these)' : ''}</legend>
           <div className="md:col-span-3">{ta('rootCause', 'Root cause', 2, canEdit)}</div>
           <Field label="Fix version" value={f.fixVersion} onChange={set('fixVersion')} />
@@ -201,7 +201,7 @@ function Evidence({ d }: { d: DD }) {
       <input ref={ref} type="file" className="hidden" tabIndex={-1} aria-hidden="true" accept="image/png,image/jpeg,image/gif,image/webp,video/webm,video/mp4,application/zip,application/json,application/pdf,text/plain" onChange={(e) => { const f = e.target.files?.[0]; if (f) up.mutate(f); e.target.value = ''; }} />
       <Button variant="secondary" onClick={() => ref.current?.click()} disabled={up.isPending}>{up.isPending ? 'Uploading…' : 'Attach file'}</Button></>}>
       {up.error && <Alert>{up.error.message}</Alert>}
-      {images.length > 0 && <div className="grid gap-3 md:grid-cols-3">{images.map((a) => <Img key={a.id} a={a} />)}</div>}
+      {images.length > 0 && <div className="grid grid-cols-1 gap-3 md:grid-cols-3">{images.map((a) => <Img key={a.id} a={a} />)}</div>}
       {videos.map((a) => <Video key={a.id} a={a} />)}
       {files.length > 0 && <div className="mt-3 flex flex-wrap gap-2">{files.map((a) => <Button key={a.id} variant="secondary" onClick={() => download(`/projects/${current!.id}/execution/attachments/${a.id}`, a.fileName)}>{KIND_LABEL[a.kind] ?? a.kind} ({Math.ceil(a.sizeBytes / 1024)} KB)</Button>)}</div>}
       {d.attachments.some((a) => a.kind === 'Trace') && <p className="mt-2 text-xs text-slate-600">Open a trace with <code>npx playwright show-trace</code> or at trace.playwright.dev. Typed passwords are redacted.</p>}

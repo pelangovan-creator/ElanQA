@@ -31,7 +31,7 @@ export function ManualRun() {
       <PageHeader title={`${run.data.runId} · Manual execution`} subtitle={`${list.length} test cases · ${run.data.passed} pass · ${run.data.failed} fail · ${run.data.blocked} blocked · ${run.data.skipped} skipped`}
         actions={<><Link to="/execution" className="inline-flex min-h-9 items-center rounded-md border border-slate-300 bg-white px-3 text-sm">Back</Link>
           {!finished && <Button onClick={() => complete.mutate()}>Complete run</Button>}{finished && <Link to={`/execution/runs/${runId}`} className="inline-flex min-h-9 items-center rounded-md bg-brand-600 px-3 text-sm text-white">View results</Link>}</>} />
-      <div className="grid gap-4 lg:grid-cols-[18rem_1fr]">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[18rem_minmax(0,1fr)]">
         <Card title="Test cases">
           <ol className="space-y-1 text-sm">
             {list.map((t, i) => {

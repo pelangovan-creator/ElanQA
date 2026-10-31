@@ -1,9 +1,12 @@
-# Production-like stack: PostgreSQL + API + web (nginx). Usage:
-#   cp .env.example .env   # set JWT_SECRET and ENCRYPTION_KEY
-#   docker compose up --build   -> http://localhost:8080
+# Production-like stack: PostgreSQL + API (with Playwright browsers) + web (nginx).
+#   cp .env.example .env   # set JWT_SECRET, ENCRYPTION_KEY and SEED_ADMIN_PASSWORD
+#   docker compose up --build -d            -> http://localhost:8080
+#   docker compose --profile demo up -d     also starts the ShopEasy demo app;
+#                                           in QA Pilot use http://demo:4600 as the environment URL.
 services:
   db:
     image: postgres:16-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_USER: qapilot
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-qapilot}
@@ -15,17 +18,27 @@ services:
       retries: 10
   api:
     build: { context: ., dockerfile: apps/api/Dockerfile }
+    restart: unless-stopped
     env_file: .env
     environment:
+      NODE_ENV: production
       DATABASE_URL: postgresql://qapilot:${POSTGRES_PASSWORD:-qapilot}@db:5432/qapilot
       CORS_ORIGIN: http://localhost:8080
       STORAGE_DIR: /data/storage
+      TRUST_PROXY: "1"
     volumes: [storage:/data/storage]
+    shm_size: 1gb   # Chromium needs more shared memory than Docker's 64 MB default
     depends_on: { db: { condition: service_healthy } }
   web:
     build: { context: ., dockerfile: apps/web/Dockerfile }
-    ports: ["8080:80"]
-    depends_on: [api]
+    restart: unless-stopped
+    ports: ["${WEB_PORT:-8080}:80"]
+    depends_on: { api: { condition: service_healthy } }
+  demo:
+    profiles: [demo]
+    build: { context: ., dockerfile: apps/demo/Dockerfile }
+    restart: unless-stopped
+    ports: ["${DEMO_PORT:-4600}:4600"]
 volumes:
   pgdata:
   storage:

@@ -12,7 +12,8 @@
     "prisma:postgres": "node scripts/make-postgres-schema.mjs",
     "db:push": "prisma db push",
     "db:seed": "ts-node --transpile-only prisma/seed.ts",
-    "db:setup": "prisma db push && npm run db:seed"
+    "db:setup": "prisma db push && npm run db:seed",
+    "seed:volume": "ts-node --transpile-only scripts/seed-volume.ts"
   },
   "prisma": {
     "seed": "ts-node --transpile-only prisma/seed.ts"

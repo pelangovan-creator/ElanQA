@@ -32,7 +32,7 @@ export function Audit() {
               </tr>
               {open === i.id && (
                 <tr><td colSpan={5} className="bg-slate-50 px-2 py-2">
-                  <div className="grid gap-2 md:grid-cols-2">
+                  <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
                     <pre className="overflow-auto text-xs"><strong>Before</strong>{'\n'}{i.before ? JSON.stringify(JSON.parse(i.before), null, 2) : '—'}</pre>
                     <pre className="overflow-auto text-xs"><strong>After</strong>{'\n'}{i.after ? JSON.stringify(JSON.parse(i.after), null, 2) : '—'}</pre>
                   </div>

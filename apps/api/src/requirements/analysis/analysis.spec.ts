@@ -126,3 +126,12 @@ describe('diffItems', () => {
     expect(similarity('a b c', 'x y z')).toBe(0);
   });
 });
+
+describe('classify: behaviour stated without a modal verb', () => {
+  it('treats passive-voice system behaviour as testable, but not plain description', () => {
+    expect(classify('A locked account is unlocked by an administrator.', 'Sentence').category).toBe('Functional');
+    expect(classify('Orders are cancelled automatically after 30 minutes.', 'Sentence').category).toBe('Functional');
+    expect(classify('This document describes the ShopEasy demo store.', 'Sentence').category).toBe('Informational');
+    expect(classify('The project is sponsored by the marketing team.', 'Sentence').category).toBe('Informational');
+  });
+});
